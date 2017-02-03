@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+import argparse
+import dynamo
+
+parser = argparse.ArgumentParser(description="Runs dynamo on the input config file.")
+parser.add_argument("config", help="Configuration file, in YAML format, as specified in docs.")
+args = parser.parse_args()
+
+model = dynamo.parse(args.config)
+model.run()

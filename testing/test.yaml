@@ -1,0 +1,81 @@
+free_params:
+  rho_s:
+    initial_value: 0.5
+    lnprior:
+      name: lnuniform
+      args: [0, 2]
+  r_s: 0
+  gamma: 0
+  upsilon: 0
+  beta_s: 0
+  beta_b: 0
+  beta_r: 0
+
+fixed_params:
+  I0_s: 1e14
+  Re_s: 10
+  n_s: 0 
+  Re_b: 0 
+  n_b: 0
+  Re_r: 0
+  n_r: 0
+  dist: 0
+
+mass:
+  name:
+    gNFW_seric
+  nparams: 4
+  kwargs:
+    I0: 1
+    Re: 2
+    n: 4
+    d: 30
+    
+tracers:
+  - name: stars
+    discrete: False
+    observables:
+      radii:
+        [1, 2, 3]
+      dispersion:
+        value:
+          [6, 4, 2]
+        uncertainty:
+          [0.2, 0.4, 0.5]
+    anisotropy:
+      name: K_ML
+    density:
+      name: I_sersic
+      kwargs:
+        I0: 1
+        Re: 2
+        n: 4
+  - name: gcs
+    discrete: True
+    observables:
+      radii: [1, 2, 3, 5]
+      velocity:
+        values: [4, 4, 3, 2]
+        uncertainty: [0.2, 0.4, 0.5, 0.5]
+      color:
+        values: [0.2, 0.5, -0.2, 0.1]
+        uncertainty: [0.02, 0.03, 0.02, 0.01]
+    anisotropy:
+      name: K_constant
+    density:
+      name: I_sersic
+      kwargs:
+        I0: 0.1
+        Re: 5
+        n: 4
+
+sampler:
+  nwalkers: 20
+  niterations: 500
+  restart: False
+  
+settings:
+  output_dir: "dynamo_outputs"
+  save_input: "test.pkl"
+
+  
