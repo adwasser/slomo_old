@@ -1,35 +1,69 @@
-free_params:
-  rho_s:
-    initial_value: 0.5
+params:
+  # free values
+  - name: rho_s
+    value: 6.84
+    transform: from_log
+    lnprior:
+      name: lnuniform
+      args: [5, 8]
+  - name: r_s
+    value: 1.74
+    lnprior:
+      name: lnuniform
+      args: [1, 2]
+    transform: from_log
+  - name: gamma
+    value: 0.6
     lnprior:
       name: lnuniform
       args: [0, 2]
-  r_s: 0
-  gamma: 0
-  upsilon: 0
-  beta_s: 0
-  beta_b: 0
-  beta_r: 0
+  - name: upsilon
+    value: 7.4
+    lnprior:
+      name: lnuniform
+      args: [4, 12]
+  - name: beta_s
+    value: 0.22
+    lnprior:
+      name: lnuniform
+      args: [-1.5, 1]
+    transform: from_symmetrized
+  - name: beta_b
+    value: -1.1
+    lnprior:
+      name: lnuniform
+      args: [-1.5, 1]
+    transform: from_symmetrized      
+  - name: beta_r
+    value: 0.52
+    lnprior:
+      name: lnuniform
+      args: [-1.5, 1]
+    transform: from_symmetrized    
 
-fixed_params:
-  I0_s: 1e14
-  Re_s: 10
-  n_s: 0 
-  Re_b: 0 
-  n_b: 0
-  Re_r: 0
-  n_r: 0
-  dist: 0
+constants:
+    # fixed values
+    I0_s: 1e14
+    Re_s: 0
+    n_s: 0
+    Re_b: 0
+    n_b: 0
+    Re_r: 0
+    n_r: 0
+    dist: 0
 
 mass:
   name:
     gNFW_seric
-  nparams: 4
   kwargs:
-    I0: 1
-    Re: 2
-    n: 4
-    d: 30
+    I0: I0_s
+    Re: Re_s
+    n: n_s
+    dist: dist
+    rho_s: rho_s
+    r_s: r_s
+    gamma: gamma
+    upsilon: upsilon
     
 tracers:
   - name: stars

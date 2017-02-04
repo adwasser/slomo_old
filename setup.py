@@ -7,7 +7,7 @@ with open(path.join(here, "_version.py"), encoding="utf-8") as f:
     # sets version
     exec(f.readline())
 
-with open(path.join(here, "README.rst"), encoding="utf-8") as f:
+with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(name="dynamo",

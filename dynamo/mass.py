@@ -5,6 +5,7 @@ from scipy import special
 from scipy import optimize
 
 from .density import b_cb, p_ln
+from .utils import radians_per_arcsec
 
 def _r200(mass_function, mass_params,
           rlow=1, rhigh=10000, delta_c=200, rho_crit=137):
@@ -70,6 +71,7 @@ def M_einasto(r, h, rho0, n_einasto):
     return M * special.gammainc(3 * n_einasto, (r / h)**(1 / n_einasto))
 
 
-def M_tot(r, r_s, rho_s, gamma, upsilon, I0, Re, n):
+def M_gNFW_sersic(R, r_s, rho_s, gamma, upsilon, I0, Re, n, dist):
+    r = dist * R * radians_per_arcsec
     return M_gNFW(r, r_s, rho_s, gamma) + M_sersic(r, upsilon, I0, Re, n)
 
