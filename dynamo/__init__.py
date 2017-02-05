@@ -6,3 +6,4 @@ with open(path.join(here, "../_version.py"), encoding="utf-8") as f:
     exec(f.readline())
 
 from .parser import parse
+

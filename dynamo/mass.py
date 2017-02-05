@@ -4,7 +4,8 @@ import numpy as np
 from scipy import special
 from scipy import optimize
 
-from .density import b_cb, p_ln
+from .surface_density import b_cb
+from .volume_density import p_ln
 from .utils import radians_per_arcsec
 
 def _r200(mass_function, mass_params,

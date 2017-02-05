@@ -47,9 +47,9 @@ class Parameter(object):
     
 class ParameterList(object):
 
-    def __init__(self, params):
+    def __init__(self, *params):
         """A list of Parameter objects"""
-        if isinstance(params, list):
+        if isinstance(params[0], dict):
             self._params = [Parameter(**p) for p in params]
         else:
             assert all([isinstance(p, Parameter) for p in params])
@@ -89,4 +89,9 @@ class ParameterList(object):
     def mapping(self):
         return {p.name: p.value for p in self._params}
 
-    
+    @property
+    def lnprior(self):
+        lp = 0
+        for p in self._params:
+            lp += p.lnprior
+        return lp
