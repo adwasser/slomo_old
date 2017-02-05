@@ -11,7 +11,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(name="dynamo",
-      version=version,
+      version=__version__,
       long_description=long_description,
       description="Dynamical modeling of elliptical galaxies",
       url="https://github.com/adwasser/dynamo",

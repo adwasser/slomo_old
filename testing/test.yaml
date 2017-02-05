@@ -39,31 +39,26 @@ params:
     lnprior:
       name: lnuniform
       args: [-1.5, 1]
-    transform: from_symmetrized    
-
+    transform: from_symmetrized
+    
 constants:
     # fixed values
-    I0_s: 1e14
-    Re_s: 0
-    n_s: 0
-    Re_b: 0
-    n_b: 0
-    Re_r: 0
-    n_r: 0
-    dist: 0
+    I0_s: 154722188735.0
+    Re_s: 100.0
+    n_s: 4.67
+    Re_b: 345.61
+    n_b: 1.6
+    Re_r: 169.13
+    n_r: 1.6
+    dist: 28.05e3
 
 mass:
   name:
-    gNFW_seric
-  kwargs:
+    M_gNFW_sersic
+  replace_kwargs:
     I0: I0_s
     Re: Re_s
     n: n_s
-    dist: dist
-    rho_s: rho_s
-    r_s: r_s
-    gamma: gamma
-    upsilon: upsilon
     
 tracers:
   - name: stars
@@ -111,5 +106,3 @@ sampler:
 settings:
   output_dir: "dynamo_outputs"
   save_input: "test.pkl"
-
-  

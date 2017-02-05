@@ -38,7 +38,7 @@ def M_sersic(r, upsilon, I0, Re, n):
     factor2 = special.gammainc((3 - p) * n, x)
     factor3 = special.gamma((3 - p) * n)
     L_sersic = factor1 * factor2 * factor3
-    return upsilon * L_sersic(r, I0, Re, n)
+    return upsilon * L_sersic
 
 
 def M_gNFW(r, r_s, rho_s, gamma):
