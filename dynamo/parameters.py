@@ -3,7 +3,7 @@ import numpy as np
 from . import (pdf, transforms)
 from .utils import get_function, get_params
 
-class Parameter(object):
+class Parameter:
 
     def __init__(self, name, value, lnprior=None, transform=None):
         """Model parameter object
@@ -45,7 +45,7 @@ class Parameter(object):
         return self._lnprior(self._value)
 
     
-class ParameterList(object):
+class ParameterList:
 
     def __init__(self, *params):
         """A list of Parameter objects"""

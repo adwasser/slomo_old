@@ -1,5 +1,6 @@
 """Probability distribution functions"""
 
+from functools import reduce
 import numpy as np
 from scipy import special
 
@@ -58,7 +59,11 @@ def lngauss(x, mu, sigma):
     return -0.5 * (chi2 + norm)
 
 
-def lngauss_discrete(v, dv, sigma):
+def lnlike_continuous(sigma_jeans, sigma, dsigma):
+    return np.sum(lnguass(sigma, sigma_jeans, dsigma))
+
+
+def lnlike_discrete(sigma_jeans, v, dv):
     """Log of gaussian likelihood of measurements with predicted v_rms, with 
     mu = 0.
     
@@ -72,6 +77,44 @@ def lngauss_discrete(v, dv, sigma):
     -------
     lnlike : float in (-inf, 0)
     """
-    var = sigma**2 + dv**2
+    var = sigma_jeans**2 + dv**2
     chi2 = v**2 / var
-    return -0.5 * (chi2 + np.log(2 * np.pi * var))
+    ll = -0.5 * (chi2 + np.log(2 * np.pi * var))
+    return np.sum(ll)
+
+
+def lnlike_gmm(sigma_jeans, v, dv, c, dc, mu_color, sigma_color, phi):
+    """Gaussian mixture model likelihood
+
+    Parameters
+    ----------
+    v : velocity
+    dv : uncertainty in velocity
+    c : color
+    dc : uncertainty in color
+    sigma : velocity dispersion predictions, list of length n_populations
+    mu_color : mean color, list of length n_populations
+    sigma_color : std of color, list of length n_populations
+    phi : weights, list of length n_populations - 1
+    
+    Returns
+    -------
+    lnlike : float in (-inf, 0)
+    """
+
+    n = len(sigma)
+    assert n == len(mu_color) and n == len(sigma_color) and n == len(phi) + 1
+
+    phi.append(1 - sum(phi))
+
+    ll = []
+    for i in range(n):
+        ll_v = lngauss_discrete(v, dv, sigma[i])
+        ll_c = lngauss(c, mu_color[i], np.sqrt(sigma_color[i] ** 2 + dc ** 2))
+        ll.append(np.log(phi[i]) + ll_v + ll_c)
+        
+    return np.sum(reduce(np.logaddexp, ll))
+    
+
+    
+    

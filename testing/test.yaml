@@ -46,12 +46,19 @@ constants:
     I0_s: 154722188735.0
     Re_s: 100.0
     n_s: 4.67
+    I0_b: 1
     Re_b: 345.61
     n_b: 1.6
+    I0_r: 1
     Re_r: 169.13
     n_r: 1.6
     dist: 28.05e3
-
+    mu_b: 0.868
+    mu_r: 1.111
+    sigma_b: 0.080
+    sigma_r: 0.104
+    phi_b: 0.5
+    
 mass:
   name:
     M_gNFW_sersic
@@ -59,45 +66,80 @@ mass:
     I0: I0_s
     Re: Re_s
     n: n_s
-    
+            
 tracers:
   - name: stars
-    discrete: False
-    observables:
-      radii:
-        [1, 2, 3]
-      dispersion:
-        value:
-          [6, 4, 2]
-        uncertainty:
-          [0.2, 0.4, 0.5]
-    anisotropy:
-      name: K_ML
-    density:
-      name: I_sersic
-      kwargs:
-        I0: 1
-        Re: 2
-        n: 4
-  - name: gcs
-    discrete: True
-    observables:
-      radii: [1, 2, 3, 5]
-      velocity:
-        values: [4, 4, 3, 2]
-        uncertainty: [0.2, 0.4, 0.5, 0.5]
-      color:
-        values: [0.2, 0.5, -0.2, 0.1]
-        uncertainty: [0.02, 0.03, 0.02, 0.01]
     anisotropy:
       name: K_constant
-    density:
+      replace_kwargs:
+        beta: beta_s
+    surface_density:
       name: I_sersic
-      kwargs:
-        I0: 0.1
-        Re: 5
-        n: 4
+      replace_kwargs:
+        I0: I0_s
+        Re: Re_s
+        n: n_s
+    volume_density:
+      name: nu_sersic
+      replace_kwargs:
+        I0: I0_s
+        Re: Re_s
+        n: n_s
+  - name: blue_gc
+    anisotropy:
+      name: K_constant
+      replace_kwargs:
+        beta: beta_b
+    surface_density:
+      name: I_sersic
+      replace_kwargs:
+        I0: I0_b
+        Re: Re_b
+        n: n_b
+    volume_density:
+      name: I_sersic
+      replace_kwargs:
+        I0: I0_b
+        Re: Re_b
+        n: n_b
+  - name: red_gc
+    anisotropy:
+      name: K_constant
+      replace_kwargs:
+        beta: beta_r
+    surface_density:
+      name: I_sersic
+      replace_kwargs:
+        I0: I0_r
+        Re: Re_r
+        n: n_r
+      volume_density:
+        name: I_sersic
+        replace_kwargs:
+          I0: I0_r
+          Re: Re_r
+          n: n_r
 
+likelihood:
+  - name: lnlike_continuous
+    tracers: stars
+    observables:
+      R: [1, 2, 3]
+      sigma: [6, 4, 2]
+      dsigma: [0.2, 0.4, 0.5]
+  - name: lnlike_gmm
+    tracers: [blue_gc, red_gc]
+    observables:
+      R: [1, 2, 3, 5]
+      v: [4, 4, 3, 2]
+      dv: [0.2, 0.4, 0.5, 0.5]
+      c: [0.2, 0.5, -0.2, 0.1]
+      dc: [0.02, 0.03, 0.02, 0.01]
+    replace_kwargs:
+      mu_color: [mu_b, mu_r]
+      sigma_color: [sigma_b, sigma_r]
+      phi: [phi_b]
+      
 sampler:
   nwalkers: 20
   niterations: 500
