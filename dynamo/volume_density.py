@@ -33,6 +33,18 @@ def nu_sersic(r, I0, Re, n):
     return nu
 
 
+def nu_sersic_s(r, I0_s, Re_s, n_s, **kwargs):
+    return nu_sersic(r, I0_s, Re_s, n_s)
+
+
+def nu_sersic_b(r, I0_b, Re_b, n_b, **kwargs):
+    return nu_sersic(r, I0_b, Re_b, n_b)
+
+
+def nu_sersic_r(r, I0_r, Re_r, n_r, **kwargs):
+    return nu_sersic(r, I0_r, Re_r, n_r)
+
+
 def nu_integral(r, dIdR):
     """Deprojected density profile.
     r is the deprojected radius, 

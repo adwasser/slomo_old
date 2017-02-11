@@ -6,7 +6,6 @@ All lengths are physical (i.e., they are actual distances, not angle subtended o
 
 import numpy as np
 from scipy import special
-from scipy.integrate import quad
 
 def b_cb(n):
     """'b' parameter in the Sersic function, from the Ciotti & Bertin (1999) 
@@ -36,6 +35,17 @@ def I_sersic(R, I0, Re, n):
     """
     I = I0 * np.exp(-b_cb(n) * (R / Re)**(1. / n))
     return I
+
+def I_sersic_s(R, I0_s, Re_s, n_s, **kwargs):
+    return I_sersic(R, I0_s, Re_s, n_s)
+
+
+def I_sersic_b(R, I0_b, Re_b, n_b, **kwargs):
+    return I_sersic(R, I0_b, Re_b, n_b)
+
+
+def I_sersic_r(R, I0_r, Re_r, n_r, **kwargs):
+    return I_sersic(R, I0_r, Re_r, n_r)
 
 
 def mu_sersic(R, mu_eff, Re, n):

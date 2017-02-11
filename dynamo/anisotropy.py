@@ -29,6 +29,18 @@ def K_constant(r, R, beta):
     return factor * (term1 + term2 + term3)
 
 
+def K_constant_s(r, R, beta_s, **kwargs):
+    return K_constant(r, R, beta_s)
+
+
+def K_constant_b(r, R, beta_b, **kwargs):
+    return K_constant(r, R, beta_b)
+
+
+def K_constant_r(r, R, beta_r, **kwargs):
+    return K_constant(r, R, beta_r)
+
+
 def K_ML(r, R, r_a):
     """Jeans kernel for anisotropy profile parameterization from Mamon & Lokas 2005b.
     beta(r) = 0.5 * r / (r + r_a)

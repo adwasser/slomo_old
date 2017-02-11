@@ -83,7 +83,7 @@ def lnlike_discrete(sigma_jeans, v, dv):
     return np.sum(ll)
 
 
-def lnlike_gmm(sigma_jeans, v, dv, c, dc, mu_color, sigma_color, phi):
+def lnlike_gmm(sigma_b, sigma_r, v, dv, c, dc, mu_b, mu_r, sigma_b, sigma_r, phi_b)
     """Gaussian mixture model likelihood
 
     Parameters

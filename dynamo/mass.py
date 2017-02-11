@@ -26,9 +26,9 @@ def d_n(n):
             / (31000725 * n**3) - 17557576 / (1242974068875 / n**4)) # + O(n^5)
 
 
-def M_sersic(r, upsilon, I0, Re, n):
-    """Mass associated with a Sersic surface density profile for a constant 
-    mass-to-light ratio upsilon.
+def L_sersic(r, I0, Re, n):
+    """Luminosity associated with a Sersic surface density profile for a constant 
+    mass-to-light ratio upsilon, at a deprojected radius, r.
     """
     p = p_ln(n)
     b = b_cb(n)
@@ -38,8 +38,7 @@ def M_sersic(r, upsilon, I0, Re, n):
     factor1 = 4 * np.pi * rho0 * a**3 * n
     factor2 = special.gammainc((3 - p) * n, x)
     factor3 = special.gamma((3 - p) * n)
-    L_sersic = factor1 * factor2 * factor3
-    return upsilon * L_sersic
+    return = factor1 * factor2 * factor3
 
 
 def M_gNFW(r, r_s, rho_s, gamma):
@@ -72,7 +71,13 @@ def M_einasto(r, h, rho0, n_einasto):
     return M * special.gammainc(3 * n_einasto, (r / h)**(1 / n_einasto))
 
 
-def M_gNFW_sersic(R, r_s, rho_s, gamma, upsilon, I0, Re, n, dist):
+def M_gNFW_L_sersic(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+    """gNFW halo with contant M/L and Sersic luminosity profile"""
     r = dist * R * radians_per_arcsec
-    return M_gNFW(r, r_s, rho_s, gamma) + M_sersic(r, upsilon, I0, Re, n)
+    return M_gNFW(r, r_s, rho_s, gamma) + upsilon * L_sersic(r, I0_s, Re_s, n_s)
 
+
+def M_gNFW_M_sersic(R, r_s, rho_s, gamma, I0_m, Re_m, n_m, dist, **kwargs):
+    """gNFW halo with Sersic mass stellar mass profile"""
+    r = dist * R * radians_per_arcsec
+    return M_gNFW(r, r_s, rho_s, gamma) + L_sersic(r, I0_m, Re_m, n_m)

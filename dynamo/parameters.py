@@ -5,7 +5,7 @@ from .utils import get_function, get_params
 
 class Parameter:
 
-    def __init__(self, name, value, lnprior=None, transform=None):
+    def __init__(self, name, value, lnprior, transform=None):
         """Model parameter object
 
         name : str, name of parameter
@@ -16,12 +16,7 @@ class Parameter:
         self.name = name
         self._value = value
         lnprior_function = get_function(pdf, lnprior['name'])
-        if lnprior is None:
-            self._lnprior = None
-            self.isfree = False
-        else:
-            self._lnprior = lambda x: lnprior_function(x, *lnprior['args'])
-            self.isfree = True
+        self._lnprior = lambda x: lnprior_function(x, *lnprior['args'])
         if transform is not None:
             self.transform = get_function(transforms, transform)
         else:
@@ -39,15 +34,15 @@ class Parameter:
     @value.setter
     def value(self, x):
         self._value = x
-        
+
     @property
-    def lnprior(self):
+    def lnprior(self, value):
         return self._lnprior(self._value)
 
     
 class ParameterList:
 
-    def __init__(self, *params):
+    def __init__(self, params):
         """A list of Parameter objects"""
         if isinstance(params[0], dict):
             self._params = [Parameter(**p) for p in params]
@@ -94,4 +89,11 @@ class ParameterList:
         lp = 0
         for p in self._params:
             lp += p.lnprior
+        return lp
+
+    def _lnprior(self, values):
+        assert len(values) == len(self)
+        lp = 0
+        for p, v in zip(self._params, values):
+            lp += p._lnprior(value)
         return lp

@@ -3,7 +3,7 @@ params:
   - name: rho_s
     value: 6.84
     transform: from_log
-    lnprior:
+    lnprior: 
       name: lnuniform
       args: [5, 8]
   - name: r_s
@@ -59,66 +59,21 @@ constants:
     sigma_r: 0.104
     phi_b: 0.5
     
-mass:
-  name:
-    M_gNFW_sersic
-  replace_kwargs:
-    I0: I0_s
-    Re: Re_s
-    n: n_s
+mass: M_gNFW_L_sersic
             
 tracers:
   - name: stars
-    anisotropy:
-      name: K_constant
-      replace_kwargs:
-        beta: beta_s
-    surface_density:
-      name: I_sersic
-      replace_kwargs:
-        I0: I0_s
-        Re: Re_s
-        n: n_s
-    volume_density:
-      name: nu_sersic
-      replace_kwargs:
-        I0: I0_s
-        Re: Re_s
-        n: n_s
+    anisotropy: K_constant_s
+    surface_density: I_sersic_s
+    volume_density: nu_sersic_s
   - name: blue_gc
-    anisotropy:
-      name: K_constant
-      replace_kwargs:
-        beta: beta_b
-    surface_density:
-      name: I_sersic
-      replace_kwargs:
-        I0: I0_b
-        Re: Re_b
-        n: n_b
-    volume_density:
-      name: I_sersic
-      replace_kwargs:
-        I0: I0_b
-        Re: Re_b
-        n: n_b
+    anisotropy: K_constant_b
+    surface_density: I_sersic_b
+    volume_density: nu_sersic_b
   - name: red_gc
-    anisotropy:
-      name: K_constant
-      replace_kwargs:
-        beta: beta_r
-    surface_density:
-      name: I_sersic
-      replace_kwargs:
-        I0: I0_r
-        Re: Re_r
-        n: n_r
-      volume_density:
-        name: I_sersic
-        replace_kwargs:
-          I0: I0_r
-          Re: Re_r
-          n: n_r
+    anisotropy: K_constant_r
+    surface_density: I_sersic_r
+    volume_density: nu_sersic_r
 
 likelihood:
   - name: lnlike_continuous
@@ -135,10 +90,6 @@ likelihood:
       dv: [0.2, 0.4, 0.5, 0.5]
       c: [0.2, 0.5, -0.2, 0.1]
       dc: [0.02, 0.03, 0.02, 0.01]
-    replace_kwargs:
-      mu_color: [mu_b, mu_r]
-      sigma_color: [sigma_b, sigma_r]
-      phi: [phi_b]
       
 sampler:
   nwalkers: 20
