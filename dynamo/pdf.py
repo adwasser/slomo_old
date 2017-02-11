@@ -58,9 +58,14 @@ def lngauss(x, mu, sigma):
     norm = np.log(2 * np.pi * sigma**2)
     return -0.5 * (chi2 + norm)
 
+def lngauss_discrete(sigma, v, dv):
+    var = sigma ** 2 + dv ** 2
+    chi2 = v**2 / var
+    ll = -0.5 * (chi2 + np.log(2 * np.pi * var))
+    return ll
 
 def lnlike_continuous(sigma_jeans, sigma, dsigma):
-    return np.sum(lnguass(sigma, sigma_jeans, dsigma))
+    return np.sum(lngauss(sigma, sigma_jeans, dsigma))
 
 
 def lnlike_discrete(sigma_jeans, v, dv):
@@ -83,7 +88,8 @@ def lnlike_discrete(sigma_jeans, v, dv):
     return np.sum(ll)
 
 
-def lnlike_gmm(sigma_b, sigma_r, v, dv, c, dc, mu_b, mu_r, sigma_b, sigma_r, phi_b)
+def lnlike_gmm(sigma_jeans_b, sigma_jeans_r, v, dv, c, dc,
+               mu_color_b, mu_color_r, sigma_color_b, sigma_color_r, phi_b, **kwargs):
     """Gaussian mixture model likelihood
 
     Parameters
@@ -102,18 +108,16 @@ def lnlike_gmm(sigma_b, sigma_r, v, dv, c, dc, mu_b, mu_r, sigma_b, sigma_r, phi
     lnlike : float in (-inf, 0)
     """
 
-    n = len(sigma)
-    assert n == len(mu_color) and n == len(sigma_color) and n == len(phi) + 1
+    ll_b_v = lnlike_discrete(v, dv, sigma_jeans_b)
+    ll_b_c = lngauss(c, mu_color_b, np.sqrt(sigma_color_b ** 2 + dc ** 2))
+    ll_b = np.log(phi_b) + ll_b_v + ll_b_c
 
-    phi.append(1 - sum(phi))
+    phi_r = 1 - phi_b
+    ll_r_v = lngauss_discrete(v, dv, sigma_jeans_r)
+    ll_r_c = lngauss(c, mu_color_r, np.sqrt(sigma_color_r ** 2 + dc ** 2))
+    ll_r = np.log(phi_r) + ll_r_v + ll_r_c
 
-    ll = []
-    for i in range(n):
-        ll_v = lngauss_discrete(v, dv, sigma[i])
-        ll_c = lngauss(c, mu_color[i], np.sqrt(sigma_color[i] ** 2 + dc ** 2))
-        ll.append(np.log(phi[i]) + ll_v + ll_c)
-        
-    return np.sum(reduce(np.logaddexp, ll))
+    return np.sum(np.logaddexp(ll_b, ll_r))
     
 
     

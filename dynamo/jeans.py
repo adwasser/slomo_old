@@ -6,32 +6,6 @@ from scipy.interpolate import interp1d
 
 from .utils import G
 
-def sigma_jeans(R, mass, anisotropy, I_tracer, nu_tracer):
-    """Velocity dispersion in the sphereically symmetric Jeans model.
-    R: an array of projected radii, in kpc
-    mass: a function R -> enclosed mass, in Msun
-    anisotropy: the Jeans kernel, a function r, R -> ... a number,
-                where r is the deprojected radius and R is the projected radius
-    I_tracer: the surface density of the tracer, R -> I, in Lsun / kpc^2
-    nu_tracer: the volume density of the tracer, r -> nu, in Lsun / kpc^3
-    """
-    integrand = lambda r, R: anisotropy(r, R) * nu_tracer(r) * mass(r) / r
-    try:
-        size = len(R)
-    except TypeError as e:
-        # R is not iterable
-        args = (R,)
-        integral = quad(integrand, R, np.inf, args=args)[0]
-    else:
-        integral = np.empty(size)
-        integral[:] = np.nan
-        for i, radius in enumerate(R):
-            args = (radius,)
-            integral[i] = quad(integrand, radius, np.inf, args=args)[0]
-    # G will convert units from Msun, kpc to km/s
-    return np.sqrt(2 * G / I_tracer(R) * integral)
-
-
 def sigma_jeans_interp(R, M, K, I, nu,
                        interp_points=10, cutoff_radius=1000, return_interp=False):
     """Velocity dispersion in the sphereically symmetric Jeans model.  For an array

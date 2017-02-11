@@ -53,13 +53,13 @@ constants:
     Re_r: 169.13
     n_r: 1.6
     dist: 28.05e3
-    mu_b: 0.868
-    mu_r: 1.111
-    sigma_b: 0.080
-    sigma_r: 0.104
+    mu_color_b: 0.868
+    mu_color_r: 1.111
+    sigma_color_b: 0.080
+    sigma_color_r: 0.104
     phi_b: 0.5
     
-mass: M_gNFW_L_sersic
+mass_model: M_gNFW_L_sersic
             
 tracers:
   - name: stars

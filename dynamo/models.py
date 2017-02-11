@@ -1,5 +1,7 @@
 """Model classes"""
 
+import numpy as np
+
 from . import (mass, anisotropy, surface_density, volume_density,
                pdf, jeans)
 from .utils import get_function, get_params, radians_per_arcsec
@@ -7,7 +9,7 @@ from .parameters import ParameterList
 
 
 class DynamicalModel:
-    def __init__(self, params, constants, tracers, mass, likelihood):
+    def __init__(self, params, constants, tracers, mass_model, likelihood, sampler, settings):
         """Complete description of the dynamical model, including measurement model, data, and priors.
 
         Parameters
@@ -15,26 +17,27 @@ class DynamicalModel:
         params : Parameter list object, as instantiated from config file
         constants : dictionary mapping variable names to fixed values
         tracers : list of Tracer objects
-        mass : enclosed mass function
+        mass_model : enclosed mass function
         likelihood : dictionary describing measurement model, as instantiated from config file
+        sampler : emcee Sampler instance
+        settings : dictionary of I/O settings
         """
         self.params = params
         self.constants = constants
         self.tracers = tracers
-        self.mass = mass
+        self.mass_model = mass_model
         self.likelihood = likelihood
-
+        self.sampler = sampler
+        self.settings = settings
         
     def __repr__(self):
-        return "<{}: {}, {:d} tracers>".format(self.__class__.__name__, self.mass.__name__, len(self.tracers))
+        return "<{}: {}, {:d} tracers>".format(self.__class__.__name__, self.mass_model.__name__, len(self.tracers))
 
 
     def lnpost(self, param_values):
         """Log of the posterior probability"""
 
-        #TODO, define kwargs from constants and params
-        new_params = self.params.mapping.update(asdfasdfasdfjasdf) ########################## FIX THIS
-        kwargs = {**self.constants, **new_params}
+        kwargs = {**self.constants, **self.params._mapping(param_values)}
         
         # log of the prior probability
         lnprior = self.params._lnprior(param_values)
@@ -42,7 +45,9 @@ class DynamicalModel:
             return -np.inf
 
         # log of the likelihood
-        lnlike = self.likelihood(mass, kwargs)
+        lnlike = 0
+        for ll in self.likelihood:
+            lnlike += ll(self.mass_model, kwargs)
         return lnprior + lnlike
 
     
@@ -57,6 +62,7 @@ class Tracer:
         surface_density : R -> I(R, **kwargs)
         volume_density : r -> nu(r, **kwargs)
         """
+        self.name = name
         self.anisotropy = anisotropy
         self.volume_density = volume_density
         self.surface_density = surface_density
@@ -64,20 +70,20 @@ class Tracer:
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
 
-    def __call__(self, radii, mass, kwargs):
+    def __call__(self, radii, mass_model, kwargs):
         """Returns the predicted velocity dispersion at the given radii.
 
         Parameters
         ----------
         radii : array of projected radii, in arcsec
-        mass : mass function, r -> M(r, **kwargs)
+        mass_model : mass function, r -> M(r, **kwargs)
         kwargs : keyword arguments for all functions
 
         Returns
         -------
         sigma : velocity dispersion array in km/s
         """
-        M = lambda r: mass(r, **kwargs)
+        M = lambda r: mass_model(r, **kwargs)
         K = lambda r, R: self.anisotropy(r, R, **kwargs)
         I = lambda R: self.surface_density(R, **kwargs)
         nu = lambda r: self.volume_density(r, **kwargs)
@@ -85,7 +91,8 @@ class Tracer:
         
 
 class Likelihood:
-    def __init__(self, likelihood, tracers, observables):
+
+    def __init__(self, name, tracers, observables):
         """Likelihood function with data.
 
         Parameters
@@ -94,6 +101,8 @@ class Likelihood:
         tracers : list of Tracer instances
         observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc]
         """
+        assert name in ['lnlike_continuous', 'lnlike_discrete', 'lnlike_gmm']
+        likelihood = get_function(pdf, name) # move over to parser at some point...
         self.likelihood = likelihood
         self.tracers = tracers
         self.radii = observables.pop('R')
@@ -103,14 +112,26 @@ class Likelihood:
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.likelihood.__name__)
 
-    def __call__(self, mass, kwargs):
-        if likelihood.__name__ in ['lnlike_continuous', 'lnlike_discrete']:
-            sigma_jeans = tracers[0](R, mass, kwargs)
+    def __call__(self, mass_model, kwargs):
+        """Returns the log likelihood for these observables.
+
+        Parameters
+        ----------
+        mass_model : mass function, r -> M(r, **kwargs)
+        kwargs : keyword arguments for all functions
+
+        Returns
+        -------
+        ll : log likelihood, in (-inf, 0)
+        """
+        if self.likelihood.__name__ in ['lnlike_continuous', 'lnlike_discrete']:
+            sigma_jeans = self.tracers[0](self.radii, mass_model, kwargs)
             return self.likelihood(sigma_jeans, **self.observables)
-        elif likelihood.__name__ == 'lnlike_gmm':
+        else:
+            assert self.likelihood.__name__ == 'lnlike_gmm'
             # TODO, find a smarter way of dealing with GMM likelihood
-            sigma_b = tracers[0](R, mass, kwargs)
-            sigma_r = tracers[1](R, mass, kwargs)
+            sigma_b = self.tracers[0](self.radii, mass_model, kwargs)
+            sigma_r = self.tracers[1](self.radii, mass_model, kwargs)
             return self.likelihood(sigma_b, sigma_r, **self.observables, **kwargs)
 
         

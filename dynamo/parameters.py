@@ -95,5 +95,9 @@ class ParameterList:
         assert len(values) == len(self)
         lp = 0
         for p, v in zip(self._params, values):
-            lp += p._lnprior(value)
+            lp += p._lnprior(v)
         return lp
+
+    def _mapping(self, values):
+        assert len(values) == len(self)
+        return {p.name: v for p, v in zip(self._params, values)}
