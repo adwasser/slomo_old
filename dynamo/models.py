@@ -4,7 +4,7 @@ import numpy as np
 
 from . import (mass, anisotropy, surface_density, volume_density,
                pdf, jeans)
-from .utils import get_function, get_params, radians_per_arcsec
+from .utils import get_function, radians_per_arcsec
 from .parameters import ParameterList
 
 
@@ -31,7 +31,9 @@ class DynamicalModel:
         self.settings = settings
         
     def __repr__(self):
-        return "<{}: {}, {:d} tracers>".format(self.__class__.__name__, self.mass_model.__name__, len(self.tracers))
+        return "<{}: {}, {:d} tracers>".format(self.__class__.__name__,
+                                               self.mass_model.__name__,
+                                               len(self.tracers))
 
 
     def lnpost(self, param_values):

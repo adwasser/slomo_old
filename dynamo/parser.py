@@ -12,12 +12,15 @@ from .utils import get_function
 from . import mass, anisotropy, surface_density, volume_density
 from .parameters import Parameter, ParameterList
 
-tracer_models = {'anisotropy': anisotropy, 'surface_density': surface_density, 'volume_density': volume_density}
 
 def parse(config_file):
     """Read in the config file and construct a model to run."""
-    top_keys = ['params', 'constants', 'mass', 'tracers', 'likelihood', 'sampler', 'settings']
-    
+    top_keys = ['params', 'constants', 'mass', 'tracers', 'likelihood',
+                'sampler', 'settings']
+    tracer_models = {'anisotropy': anisotropy,
+                     'surface_density': surface_density,
+                     'volume_density': volume_density}
+
     with open(config_file) as f:
         config = yaml.load(f)
 
@@ -26,9 +29,8 @@ def parse(config_file):
     for i, param in enumerate(param_list):
         # convert any lnprior string to dict
         if isinstance(param['lnprior'], str):
-            name, args = param['lnprior'].split(',')
-            args = [i for i in map(float, args)]
-            
+            name, *args = map(str.strip, param['lnprior'].split(','))
+            args = list(map(float, args))
             param['lnprior'] = {'name': name, 'args': args}
         param_list[i] = Parameter(**param)
     config['params'] = ParameterList(param_list)
