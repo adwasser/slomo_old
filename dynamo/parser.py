@@ -14,7 +14,7 @@ from . import (pdf, likelihood,
                mass, anisotropy,
                surface_density, volume_density)
 
-def parse(config_file):
+def read(config_file):
     """Read in the config file and construct a model to run."""
     top_keys = ['params', 'constants', 'mass', 'tracers', 'measurements',
                 'sampler', 'settings']
@@ -63,5 +63,7 @@ def parse(config_file):
             measurement['observables'] = {name: data[name] for name in data.dtype.names}
         config['measurements'][i] = Measurement(**measurement)
 
+    config['sampler']['dim'] = len(config['params'])
+    
     model = DynamicalModel(**config)
     return model

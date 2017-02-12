@@ -5,5 +5,7 @@ with open(path.join(here, "../_version.py"), encoding="utf-8") as f:
     # sets version
     exec(f.readline())
 
-from .parser import parse
+from . import *
+from .parser import read
+from .run import sample
 from .models import DynamicalModel

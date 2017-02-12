@@ -7,5 +7,7 @@ parser = argparse.ArgumentParser(description="Runs dynamo on the input config fi
 parser.add_argument("config", help="Configuration file, in YAML format, as specified in docs.")
 args = parser.parse_args()
 
-model = dynamo.parse(args.config)
-model.run()
+model = dynamo.read(args.config)
+sampler = dynamo.sample(model)
+
+
