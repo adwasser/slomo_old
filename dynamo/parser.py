@@ -7,15 +7,16 @@ try:
 except ImportError as e:
     import yaml
 
-from .models import (Tracer, Likelihood, DynamicalModel)
+from .models import (Tracer, Measurement, DynamicalModel)
 from .utils import get_function
-from . import mass, anisotropy, surface_density, volume_density
-from .parameters import Parameter, ParameterList
-
+from .parameters import (Parameter, ParameterList)
+from . import (pdf, likelihood,
+               mass, anisotropy,
+               surface_density, volume_density)
 
 def parse(config_file):
     """Read in the config file and construct a model to run."""
-    top_keys = ['params', 'constants', 'mass', 'tracers', 'likelihood',
+    top_keys = ['params', 'constants', 'mass', 'tracers', 'measurements',
                 'sampler', 'settings']
     tracer_models = {'anisotropy': anisotropy,
                      'surface_density': surface_density,
@@ -48,17 +49,19 @@ def parse(config_file):
         config['tracers'][i] = Tracer(**tracer)
 
     # load likelihoods
-    likelihood_list = config['likelihood']
+    measurement_list = config['measurements']
     tracer_dict = {tracer.name: i for i, tracer in enumerate(config['tracers'])}
-    for i, likelihood in enumerate(likelihood_list):
+    for i, measurement in enumerate(measurement_list):
+        measurement['likelihood'] = get_function(likelihood, measurement['likelihood'])
         # replace single tracer with list
-        if not isinstance(likelihood['tracers'], list):
-            likelihood['tracers'] = [likelihood['tracers']]
-        likelihood['tracers'] = [config['tracers'][tracer_dict[tracer]] for tracer in likelihood['tracers']]
-        # TODO: include parsing of file names, columsn for observable
-        for key in likelihood['observables']:
-            likelihood['observables'][key] = np.array(likelihood['observables'][key])
-        config['likelihood'][i] = Likelihood(**likelihood)
+        if not isinstance(measurement['tracers'], list):
+            measurement['tracers'] = [measurement['tracers']]
+        measurement['tracers'] = [config['tracers'][tracer_dict[tracer]] for
+                                  tracer in measurement['tracers']]
+        if isinstance(measurement['observables'], str):
+            data = np.genfromtxt(measurement['observables'], names=True).view(np.recarray)
+            measurement['observables'] = {name: data[name] for name in data.dtype.names}
+        config['measurements'][i] = Measurement(**measurement)
 
     model = DynamicalModel(**config)
     return model

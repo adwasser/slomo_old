@@ -10,7 +10,7 @@ class Parameter:
 
         name : str, name of parameter
         value : float, numeric value, if free param then it is the initial value
-        lnprior : dict with keys (name, args), if None then fixed value parameter
+        lnprior : dict with keys (name, args)
         transform : name of function for transforming 
         """
         self.name = name
@@ -20,15 +20,13 @@ class Parameter:
         if transform is not None:
             self.transform = get_function(transforms, transform)
         else:
-            self.transform = None
+            self.transform = lambda x: x
 
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
     
     @property
     def value(self):
-        if self.transform is None:
-            return self._value
         return self.transform(self._value)
 
     @value.setter
@@ -80,24 +78,15 @@ class ParameterList:
         for i, p in enumerate(self._params):
             p.value = values[i]
         
-    @property
-    def mapping(self):
-        return {p.name: p.value for p in self._params}
-
-    @property
-    def lnprior(self):
-        lp = 0
-        for p in self._params:
-            lp += p.lnprior
-        return lp
-
-    def _lnprior(self, values):
+    def lnprior(self, values):
+        # pre-transformed values
         assert len(values) == len(self)
         lp = 0
         for p, v in zip(self._params, values):
             lp += p._lnprior(v)
         return lp
 
-    def _mapping(self, values):
+    def mapping(self, values):
+        # pre-transformed values
         assert len(values) == len(self)
-        return {p.name: v for p, v in zip(self._params, values)}
+        return {p.name: p.transform(v) for p, v in zip(self._params, values)}

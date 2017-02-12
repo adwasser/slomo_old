@@ -9,7 +9,7 @@ from .parameters import ParameterList
 
 
 class DynamicalModel:
-    def __init__(self, params, constants, tracers, mass_model, likelihood, sampler, settings):
+    def __init__(self, params, constants, tracers, mass_model, measurements, sampler, settings):
         """Complete description of the dynamical model, including measurement model, data, and priors.
 
         Parameters
@@ -18,7 +18,7 @@ class DynamicalModel:
         constants : dictionary mapping variable names to fixed values
         tracers : list of Tracer objects
         mass_model : enclosed mass function
-        likelihood : dictionary describing measurement model, as instantiated from config file
+        measurements : list of Measurement objects
         sampler : emcee Sampler instance
         settings : dictionary of I/O settings
         """
@@ -26,7 +26,7 @@ class DynamicalModel:
         self.constants = constants
         self.tracers = tracers
         self.mass_model = mass_model
-        self.likelihood = likelihood
+        self.measurements = measurements
         self.sampler = sampler
         self.settings = settings
         
@@ -35,20 +35,23 @@ class DynamicalModel:
                                                self.mass_model.__name__,
                                                len(self.tracers))
 
+    def _kwargs(self, param_values):
+        return {**self.constants, **self.params.mapping(param_values)}
 
-    def lnpost(self, param_values):
+
+    def __call__(self, param_values):
         """Log of the posterior probability"""
-
-        kwargs = {**self.constants, **self.params._mapping(param_values)}
+        
+        kwargs = self._kwargs(param_values)
         
         # log of the prior probability
-        lnprior = self.params._lnprior(param_values)
+        lnprior = self.params.lnprior(param_values)
         if not np.isfinite(lnprior):
             return -np.inf
 
         # log of the likelihood
         lnlike = 0
-        for ll in self.likelihood:
+        for ll in self.measurements:
             lnlike += ll(self.mass_model, kwargs)
         return lnprior + lnlike
 
@@ -92,9 +95,9 @@ class Tracer:
         return jeans.sigma_jeans_interp(radii, M, K, I, nu)
         
 
-class Likelihood:
+class Measurement:
 
-    def __init__(self, name, tracers, observables):
+    def __init__(self, likelihood, tracers, observables):
         """Likelihood function with data.
 
         Parameters
@@ -103,8 +106,7 @@ class Likelihood:
         tracers : list of Tracer instances
         observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc]
         """
-        assert name in ['lnlike_continuous', 'lnlike_discrete', 'lnlike_gmm']
-        likelihood = get_function(pdf, name) # move over to parser at some point...
+        assert likelihood.__name__ in ['lnlike_continuous', 'lnlike_discrete', 'lnlike_gmm']
         self.likelihood = likelihood
         self.tracers = tracers
         self.radii = observables.pop('R')
