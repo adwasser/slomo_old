@@ -77,7 +77,10 @@ def M_gNFW_L_sersic(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwar
     return M_gNFW(r, r_s, rho_s, gamma) + upsilon * L_sersic(r, I0_s, Re_s, n_s)
 
 
-def M_gNFW_M_sersic(R, r_s, rho_s, gamma, I0_m, Re_m, n_m, dist, **kwargs):
-    """gNFW halo with Sersic mass stellar mass profile"""
+def M_gNFW_M_sersic(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
+    """gNFW halo with Sersic mass stellar mass profile
+    Here the sersic profile must be a mass surface density, not a luminosity
+    profile.
+    """
     r = dist * R * radians_per_arcsec
-    return M_gNFW(r, r_s, rho_s, gamma) + L_sersic(r, I0_m, Re_m, n_m)
+    return M_gNFW(r, r_s, rho_s, gamma) + L_sersic(r, I0_s, Re_s, n_s)
