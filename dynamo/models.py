@@ -52,7 +52,12 @@ class DynamicalModel:
         # log of the likelihood
         lnlike = 0
         for ll in self.measurements:
-            lnlike += ll(self.mass_model, kwargs)
+            try:
+                lnlike += ll(self.mass_model, kwargs)
+            except FloatingPointError as e:
+                print(ll)
+                print(e, "for params", param_values)
+                return -np.inf
         return lnprior + lnlike
 
     
