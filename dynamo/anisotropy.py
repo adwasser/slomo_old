@@ -41,7 +41,7 @@ def K_constant_r(r, R, beta_r, **kwargs):
     return K_constant(r, R, beta_r)
 
 
-def K_ML(r, R, r_a):
+def K_ML(r, R, r_a, **kwargs):
     """Jeans kernel for anisotropy profile parameterization from Mamon & Lokas 2005b.
     beta(r) = 0.5 * r / (r + r_a)
     M&L use r_a ~ 0.18 r_virial
@@ -61,7 +61,7 @@ def K_ML(r, R, r_a):
     return term1 + term2
 
 
-def K_OM(r, R, r_a):
+def K_OM(r, R, r_a, **kwargs):
     """Jeans kernel for Osipkov-Merrit anisotropy profile.
     beta(r) = r**2 / (r**2 + r_a**2)
     """
