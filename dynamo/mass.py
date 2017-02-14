@@ -41,7 +41,7 @@ def L_sersic(r, I0, Re, n):
     return factor1 * factor2 * factor3
 
 
-def M_gNFW(r, r_s, rho_s, gamma):
+def M_gNFW(r, r_s, rho_s, gamma, **kwargs):
     """Enclosed dark matter, parameterized as a generalized NFW profile.
     r is the input radius to evaluate enclosed mass.
     r_s is the scale radius.
@@ -69,6 +69,10 @@ def M_einasto(r, h, rho0, n_einasto):
     """Mass profile for an Einasto halo."""
     M = 4 * np.pi * rho0 * h**3 * n_einasto * special.gamma(3 * n_einasto)
     return M * special.gammainc(3 * n_einasto, (r / h)**(1 / n_einasto))
+
+
+def M_sersic(r, upsilon, I0_s, Re_s, n_s, **kwargs):
+    return upsilon * L_sersic(r, I0_s, Re_s, n_s)
 
 
 def M_gNFW_L_sersic(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):

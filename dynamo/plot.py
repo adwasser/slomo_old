@@ -9,18 +9,21 @@ from emcee.autocorr import function as autocorr_function
 from emcee.autocorr import integrated_time
 from corner import corner
 
+from .utils import get_params, radians_per_arcsec
+from . import mass
+
 label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
              "upsilon": r"$\Upsilon_*$", "beta_s": r"$\beta_s$",
              "beta_b": r"$\beta_b$", "beta_r": r"$\beta_r$", "dist": r"$D$",
              "phi_b": r"$\phi_b$", "alpha_s": r"$\alpha_*$",
              "I0_s": r"$\Sigma_{0, *}$", "Re_s": r"$R_{\mathrm{eff}, *}$",
-             "n_s": r"$n_*$"}
+             "n_s": r"$n_*$", "r_a": r"$r_a$"}
 
 def plotstyle():
     mpl.rc("figure", figsize=(12, 8))
     mpl.rc("font", size=12, family="serif")
     mpl.rc("xtick", direction="in")
-    mpl.rc("ytick", direction="out")
+    mpl.rc("ytick", direction="in")
     mpl.rc("errorbar", capsize=3)
     mpl.rc("savefig", bbox="tight")
     mpl.rc("axes.formatter", limits=(-3, 3))
@@ -133,10 +136,50 @@ def corner_plot(model, chain, burn_fraction=0.5):
     return fig
 
 
-def mass_plot(model, chain, burn_fraction=0.5, rmax=100):
-    pass
+def mass_plot(model, chain, burn_fraction=0.5,
+              rmax=500, nsamples=10000, size=50,
+              dm_model=mass.M_gNFW, st_model=mass.M_sersic):
+    """rmax: maximum radius in kpc, nsamples: number of posterior samples"""
+    if isinstance(chain, str):
+        chain = read_chain(chain)
 
+    nwalkers, niterations, ndim = chain.shape
+    assert ndim == len(model.params)
+    keep = round(niterations * burn_fraction)
+    samples = chain[:, keep:, :].reshape((-1, ndim))
+    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
+    
+    radii = np.logspace(0, np.log10(rmax), size)    
+    dm_profiles = np.zeros((nsamples, size))
+    st_profiles = np.zeros((nsamples, size))
+    for i, param_values in enumerate(samples[idx]):
+        param_map = model.params.mapping(param_values)
+        kwargs = {**param_map, **model.constants}
+        dm_profiles[i] = dm_model(radii, **kwargs)
+        st_profiles[i] = st_model(radii, **kwargs)
+        
+    M_tot = dm_profiles + st_profiles
+    M_dm_low, M_dm_med, M_dm_high = np.percentile(dm_profiles, [16, 50, 84], axis=0)
+    M_star_low, M_star_med, M_star_high = np.percentile(st_profiles, [16, 50, 84], axis=0)
+    M_tot_low, M_tot_med, M_tot_high = np.percentile(M_tot, [16, 50, 84], axis=0)
+    r = radii
+    
+    fig, ax = plt.subplots()
+    ax.plot(r, M_star_med, 'c-.', label='Stars')
+    ax.fill_between(r, M_star_low, M_star_high, facecolor='c', alpha=0.3)
+    ax.plot(r, M_dm_med, 'm--', label='DM')
+    ax.fill_between(r, M_dm_low, M_dm_high, facecolor='m', alpha=0.3)
+    ax.plot(r, M_tot_med, 'k-', label='Total')
+    ax.fill_between(r, M_tot_low, M_tot_high, facecolor='k', alpha=0.3)
+    ax.set_xlim(np.min(r), np.max(r))
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('Radius [kpc]')
+    ax.set_ylabel(r'Enclosed mass [M$_\odot$]')
+    ax.legend(loc='best')
 
+    return fig, ax
+    
 def data_plot(model, chain):
     pass
 
