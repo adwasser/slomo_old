@@ -51,11 +51,11 @@ def mock(model, outdir, prefix):
             v = np.zeros(dv.shape)
             c = np.zeros(dc.shape)
             for i, R in enumerate(radii):
-                # Bayes to the rescue!
+                # Bayes to the rescue!?
                 # p(blue | R) propto p(R | blue) * p(blue)
-                p_blue = phi_b * (2 * np.pi * R * I_sersic(R, I0_b, Re_b, n_b)
-                                  / L_sersic_tot(I0_b, Re_b, n_b))
-                if np.random.rand() < p_blue:
+                # p_blue = phi_b * (2 * np.pi * R * I_sersic(R, I0_b, Re_b, n_b)
+                #                   / L_sersic_tot(I0_b, Re_b, n_b))
+                if np.random.rand() < phi_b:
                     v[i] = sigma_b[i] * np.random.randn()
                     c[i] = np.sqrt(sigma_color_b ** 2 + dc[i] ** 2) * \
                            np.random.randn() + mu_color_b

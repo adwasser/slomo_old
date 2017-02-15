@@ -9,3 +9,4 @@ from . import *
 from .parser import read
 from .run import sample
 from .models import DynamicalModel
+from .mock import mock
