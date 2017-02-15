@@ -27,9 +27,9 @@ def header(model):
 def sample(model):
     """Sample from the DynamicalModel instance."""
     
-    nwalkers = model.sampler['nwalkers']
+    nwalkers = model._kwargs['sampler']['nwalkers']
     ndim = len(model.params)
-    threads = model.sampler['threads']
+    threads = model._kwargs['sampler']['threads']
     if threads > 1:
         pool = multiprocess.Pool(threads)
     else:

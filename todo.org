@@ -1,0 +1,17 @@
+
+* have classes for models
+  - MassModel should reference stellar and dark components
+  - DensityModel should reference surface and volume density models,
+      as well as having integrated values, could be super class for MassModel
+  - AnisotropyModel should reference both anisotropy profile and Jeans kernel,
+      and should provide a way to compute the Jeans kernel numerically should
+      an analytical form not exist
+
+* collect all input/output into a new io module
+  - takes read_* functions currently in plots
+  - ensures that there is a warning before overwriting files
+
+* figure out better scheme for lnlike_gmm
+  - and correspondingly the mock GMM data
+
+* include options (e.g., run, mock, plot) for executable script

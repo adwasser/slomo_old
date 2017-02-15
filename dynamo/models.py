@@ -9,7 +9,7 @@ from .parameters import ParameterList
 
 
 class DynamicalModel:
-    def __init__(self, params, constants, tracers, mass_model, measurements, sampler, settings):
+    def __init__(self, params, constants, tracers, mass_model, measurements, **kwargs):
         """Complete description of the dynamical model, including measurement model, data, and priors.
 
         Parameters
@@ -19,30 +19,28 @@ class DynamicalModel:
         tracers : list of Tracer objects
         mass_model : enclosed mass function
         measurements : list of Measurement objects
-        sampler : emcee Sampler instance
-        settings : dictionary of I/O settings
+        kwargs : other keyword arguments to store for posterity
         """
         self.params = params
         self.constants = constants
         self.tracers = tracers
         self.mass_model = mass_model
         self.measurements = measurements
-        self.sampler = sampler
-        self.settings = settings
+        self._kwargs = kwargs
         
     def __repr__(self):
         return "<{}: {}, {:d} tracers>".format(self.__class__.__name__,
                                                self.mass_model.__name__,
                                                len(self.tracers))
 
-    def _kwargs(self, param_values):
+    def construct_kwargs(self, param_values):
         return {**self.constants, **self.params.mapping(param_values)}
 
 
     def __call__(self, param_values):
         """Log of the posterior probability"""
         
-        kwargs = self._kwargs(param_values)
+        kwargs = self.construct_kwargs(param_values)
         
         # log of the prior probability
         lnprior = self.params.lnprior(param_values)
