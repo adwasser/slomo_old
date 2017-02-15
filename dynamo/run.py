@@ -4,6 +4,7 @@ import os
 import subprocess
 import inspect
 import time
+from collections import deque
 
 import dill as pickle
 import multiprocess
@@ -35,7 +36,7 @@ def sample(model):
     else:
         pool = None
     sampler = EnsembleSampler(nwalkers, ndim, model, threads=threads, pool=pool)
-    settings = model.settings
+    settings = model._kwargs['settings']
     prefix = settings['prefix']
     outdir = settings['outdir']
     restart = settings['restart']
