@@ -76,15 +76,22 @@ def M_sersic(r, upsilon, I0_s, Re_s, n_s, **kwargs):
 
 
 def M_gNFW_L_sersic(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
-    """gNFW halo with contant M/L and Sersic luminosity profile"""
-    r = dist * R * radians_per_arcsec
-    return M_gNFW(r, r_s, rho_s, gamma) + upsilon * L_sersic(r, I0_s, Re_s, n_s)
+    """gNFW halo with contant M/L and Sersic luminosity profile
+    R is in arcsec, converted to kpc with dist (in kpc
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = R * kpc_per_arcsec
+    I0_s = I0_s * (kpc_per_arcsec ** 2)
+    return M_gNFW(r, r_s, rho_s, gamma) + upsilon * L_sersic(R, I0_s, Re_s, n_s)
 
 
 def M_gNFW_M_sersic(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
     """gNFW halo with Sersic mass stellar mass profile
     Here the sersic profile must be a mass surface density, not a luminosity
     profile.
+    R is in arcsec, converted to kpc with dist (in kpc
     """
-    r = dist * R * radians_per_arcsec
-    return M_gNFW(r, r_s, rho_s, gamma) + L_sersic(r, I0_s, Re_s, n_s)
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = R * kpc_per_arcsec
+    I0_s = I0_s * (kpc_per_arcsec ** 2)
+    return M_gNFW(r, r_s, rho_s, gamma) + L_sersic(R, I0_s, Re_s, n_s)

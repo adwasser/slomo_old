@@ -95,7 +95,7 @@ class Tracer:
         K = lambda r, R: self.anisotropy(r, R, **kwargs)
         I = lambda R: self.surface_density(R, **kwargs)
         nu = lambda r: self.volume_density(r, **kwargs)
-        return jeans.sigma_jeans_interp(radii, M, K, I, nu)
+        return jeans.sigma_jeans(radii, M, K, I, nu)
         
 
 class Measurement:
