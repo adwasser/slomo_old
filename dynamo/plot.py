@@ -115,16 +115,15 @@ def corner_plot(model, chain, burn_fraction=0.5):
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
     labels = [label_map[name] for name in model.params.names]
-
-    # convert dist from kpc to Mpc    
-    try:
-        idx = model.params.names.index("dist")
-        chain[:, :, idx] = 1e-3 * chain[:, :, idx]
-    except ValueError as e:
-        pass
     
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
+    # convert dist from kpc to Mpc    
+    try:
+        idx = model.params.names.index("dist")
+        samples[:, idx] = 1e-3 * samples[:, idx]
+    except ValueError as e:
+        pass
         
     kwargs = {'labels': labels, 'quantiles': [.16, .5, .84],
               'hist_kwargs': {'lw': 2}, 'use_math_text': True,
