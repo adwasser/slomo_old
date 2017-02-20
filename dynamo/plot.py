@@ -107,7 +107,7 @@ def autocorr_plot(model, chain, skip_step=100, **kwargs):
     return fig, axarr
 
     
-def corner_plot(model, chain, burn_fraction=0.5):
+def corner_plot(model, chain, burn_fraction=0.5, **kwargs):
     """Make an enormous corner plot, rejecting the burn-in iterations at the start."""
     if isinstance(chain, str):
         chain = read_chain(chain)
@@ -125,12 +125,12 @@ def corner_plot(model, chain, burn_fraction=0.5):
     except ValueError as e:
         pass
         
-    kwargs = {'labels': labels, 'quantiles': [.16, .5, .84],
-              'hist_kwargs': {'lw': 2}, 'use_math_text': True,
-              'show_titles': True, 'title_kwargs': {'fontsize': 16},
-              'plot_datapoints': True, 'fill_contours': True,
-              'plot_density': True,
-              'contourf_kwargs': {'cmap': 'BuPu', 'colors': None}}
+    kwargs.update({'labels': labels, 'quantiles': [.16, .5, .84],
+                   'hist_kwargs': {'lw': 2}, 'use_math_text': True,
+                   'show_titles': True, 'title_kwargs': {'fontsize': 16},
+                   'plot_datapoints': True, 'fill_contours': True,
+                   'plot_density': True,
+                   'contourf_kwargs': {'cmap': 'BuPu', 'colors': None}})
     fig = corner(samples, **kwargs)
     return fig
 
