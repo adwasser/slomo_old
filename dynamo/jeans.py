@@ -18,8 +18,8 @@ def sigma_jeans(R, M, K, I, nu,
     M : a function R -> enclosed mass, in Msun
     K : the Jeans kernel, a function r, R -> ... a number,
         where r is the deprojected radius and R is the projected radius
-    I : the surface density of the tracer, R -> I, in count / arcsec^2
-    nu : the volume density of the tracer, r -> nu, in count / arcsec^2
+    I : the surface density of the tracer, R -> I, in count / kpc^2
+    nu : the volume density of the tracer, r -> nu, in count / kpc^3
     interp_points: number of radial points (distributed logarithmically) 
                    to interpolate over; if None, than compute each point without
                    interpolation

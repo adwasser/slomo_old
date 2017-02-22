@@ -8,6 +8,7 @@ import numpy as np
 from scipy import special
 from scipy.integrate import quad
 
+from .utils import radians_per_arcsec
 from .surface_density import b_cb
 
 def p_ln(n):
@@ -17,32 +18,39 @@ def p_ln(n):
     return 1. - 0.6097 / n + 0.05463 / n**2
 
 
-def nu_sersic(r, I0, Re, n):
+def nu_sersic(r, I0, Re, n, dist):
     """Sersic deprojected (3D) brightness profile approximation from
     Lima Neto et al. (1999)
-    r is the physical radius at which to evaluate the function
-    I0 is the central brightness.
-    Re is the effective radius (at which half the luminosity is enclosed).
+    r is the deprojected radius (in arcsec) at which to evaluate the function
+    I0 is the central brightness, in Lsun kpc^-2
+    Re is the effective radius (at which half the luminosity is enclosed), in arcsec
     n is the Sersic index.
+    dist is the distance in kpc
     """
+    # distance dependent conversions
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    Re = Re * kpc_per_arcsec
+    I0 = I0 * kpc_per_arcsec ** 2
+    
     b = b_cb(n)
     p = p_ln(n)
-    nu0 = I0 * b**n * special.gamma(2 * n) / (2 * Re *
-                                              special.gamma((3 - p) * n))
+    nu0 = (I0 * b**n * special.gamma(2 * n) /
+           (2 * Re * special.gamma((3 - p) * n)))
     nu = nu0 * (b**n * r / Re)**(-p) * np.exp(-b_cb(n) * (r / Re)**(1 / n))
     return nu
 
 
-def nu_sersic_s(r, I0_s, Re_s, n_s, **kwargs):
-    return nu_sersic(r, I0_s, Re_s, n_s)
+def nu_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
+    return nu_sersic(r, I0_s, Re_s, n_s, dist)
 
 
-def nu_sersic_b(r, I0_b, Re_b, n_b, **kwargs):
-    return nu_sersic(r, I0_b, Re_b, n_b)
+def nu_sersic_b(r, I0_b, Re_b, n_b, dist, **kwargs):
+    return nu_sersic(r, I0_b, Re_b, n_b, dist)
 
 
-def nu_sersic_r(r, I0_r, Re_r, n_r, **kwargs):
-    return nu_sersic(r, I0_r, Re_r, n_r)
+def nu_sersic_r(r, I0_r, Re_r, n_r, dist, **kwargs):
+    return nu_sersic(r, I0_r, Re_r, n_r, dist)
 
 
 def nu_integral(r, dIdR):

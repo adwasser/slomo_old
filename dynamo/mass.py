@@ -26,10 +26,17 @@ def d_n(n):
             / (31000725 * n**3) - 17557576 / (1242974068875 / n**4)) # + O(n^5)
 
 
-def L_sersic(r, I0, Re, n):
+def L_sersic(r, I0, Re, n, dist):
     """Luminosity associated with a Sersic surface density profile for a constant 
     mass-to-light ratio upsilon, at a deprojected radius, r.
     """
+
+    # distance dependent conversions
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    Re = Re * kpc_per_arcsec
+    I0 = I0 * kpc_per_arcsec ** 2
+    
     p = p_ln(n)
     b = b_cb(n)
     a = Re / b**n
@@ -40,8 +47,11 @@ def L_sersic(r, I0, Re, n):
     factor3 = special.gamma((3 - p) * n)
     return factor1 * factor2 * factor3
 
+def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
+    return L_sersic(r, I0_s, Re_s, n_s, dist)
 
-def M_gNFW(r, r_s, rho_s, gamma, **kwargs):
+
+def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     """Enclosed dark matter, parameterized as a generalized NFW profile.
     r is the input radius to evaluate enclosed mass.
     r_s is the scale radius.
@@ -53,6 +63,10 @@ def M_gNFW(r, r_s, rho_s, gamma, **kwargs):
     and x is the dummy variable in the hypergeometric integrand.  Note that
     Beta(omega, 1) = 1 / omega.
     """
+    # distance conversion
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    
     omega = 3 - gamma
     factor1 = 4 * np.pi * rho_s * r_s**3 / omega
     factor2 = (r / r_s)**omega
@@ -71,27 +85,21 @@ def M_einasto(r, h, rho0, n_einasto):
     return M * special.gammainc(3 * n_einasto, (r / h)**(1 / n_einasto))
 
 
-def M_sersic(r, upsilon, I0_s, Re_s, n_s, **kwargs):
-    return upsilon * L_sersic(r, I0_s, Re_s, n_s)
+def M_sersic(r, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+    return upsilon * L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
-def M_gNFW_L_sersic(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+def M_gNFW_constant_IMF(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     """gNFW halo with contant M/L and Sersic luminosity profile
-    R is in arcsec, converted to kpc with dist (in kpc
+    R is in arcsec, converted to kpc with dist (in kpc)
     """
-    kpc_per_arcsec = dist * radians_per_arcsec
-    r = R * kpc_per_arcsec
-    I0_s = I0_s * (kpc_per_arcsec ** 2)
-    return M_gNFW(r, r_s, rho_s, gamma) + upsilon * L_sersic(R, I0_s, Re_s, n_s)
+    return M_gNFW(R, r_s, rho_s, gamma, dist) + M_sersic(R, upsilon, I0_s, Re_s, n_s, dist)
 
 
-def M_gNFW_M_sersic(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
-    """gNFW halo with Sersic mass stellar mass profile
+def M_gNFW_variable_IMF(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
+    """gNFW halo with Sersic mass stellar mass profile from variable IMF
     Here the sersic profile must be a mass surface density, not a luminosity
     profile.
-    R is in arcsec, converted to kpc with dist (in kpc
+    R is in arcsec, converted to kpc with dist (in kpc)
     """
-    kpc_per_arcsec = dist * radians_per_arcsec
-    r = R * kpc_per_arcsec
-    I0_s = I0_s * (kpc_per_arcsec ** 2)
-    return M_gNFW(r, r_s, rho_s, gamma) + L_sersic(R, I0_s, Re_s, n_s)
+    return M_gNFW(R, r_s, rho_s, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
