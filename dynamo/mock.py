@@ -6,10 +6,12 @@ import numpy as np
 from .surface_density import I_sersic
 from .volume_density import L_sersic_tot
 
-def mock(model, outdir, prefix):
+def mock(model):
     """Create a mock data set"""
 
     mass_model = model.mass_model
+    outdir = model._kwargs['mock']['outdir']
+    prefix = model._kwargs['mock']['prefix']    
     kwargs = model.construct_kwargs(model.params._values)
     saveto = os.path.join(outdir, prefix)
     

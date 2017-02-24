@@ -7,6 +7,8 @@ All lengths are physical (i.e., they are actual distances, not angle subtended o
 import numpy as np
 from scipy import special
 
+from .utils import radians_per_arcsec
+
 def b_cb(n):
     """'b' parameter in the Sersic function, from the Ciotti & Bertin (1999) 
     approximation.
@@ -26,26 +28,33 @@ def I_nuker(R, Ib, Rb, alpha, beta, gamma):
     return I
 
 
-def I_sersic(R, I0, Re, n):
+def I_sersic(R, I0, Re, n, dist):
     """Sersic surface brightness profile.
-    R is the projected radius at which to evaluate the function.
-    I0 is the central brightness.
-    Re is the effective radius (at which half the luminosity is enclosed).
+    R is the projected radius, in arcsec, at which to evaluate the function.
+    I0 is the central brightness, in Lsun kpc^-2
+    Re is the effective radius (at which half the luminosity is enclosed), in arcsec
     n is the Sersic index.
+    dist is the distance in kpc
     """
+    # distance dependent conversions
+    kpc_per_arcsec = dist * radians_per_arcsec
+    R = R * kpc_per_arcsec
+    Re = Re * kpc_per_arcsec
+    I0 = I0 * kpc_per_arcsec ** 2    
     I = I0 * np.exp(-b_cb(n) * (R / Re)**(1. / n))
     return I
 
-def I_sersic_s(R, I0_s, Re_s, n_s, **kwargs):
-    return I_sersic(R, I0_s, Re_s, n_s)
+
+def I_sersic_s(R, I0_s, Re_s, n_s, dist, **kwargs):    
+    return I_sersic(R, I0_s, Re_s, n_s, dist)
 
 
-def I_sersic_b(R, I0_b, Re_b, n_b, **kwargs):
-    return I_sersic(R, I0_b, Re_b, n_b)
+def I_sersic_b(R, I0_b, Re_b, n_b, dist, **kwargs):
+    return I_sersic(R, I0_b, Re_b, n_b, dist)
 
 
-def I_sersic_r(R, I0_r, Re_r, n_r, **kwargs):
-    return I_sersic(R, I0_r, Re_r, n_r)
+def I_sersic_r(R, I0_r, Re_r, n_r, dist, **kwargs):
+    return I_sersic(R, I0_r, Re_r, n_r, dist)
 
 
 def mu_sersic(R, mu_eff, Re, n):
