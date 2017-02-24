@@ -5,6 +5,8 @@ import subprocess
 import inspect
 from collections import deque
 
+import numpy as np
+
 import h5py
 import dill as pickle
 try:
@@ -41,7 +43,7 @@ def read_yaml(filename):
                      'surface_density': surface_density,
                      'volume_density': volume_density}
 
-    with open(config_file) as f:
+    with open(filename) as f:
         config = yaml.load(f)
 
     # load parameter list
@@ -81,13 +83,14 @@ def read_yaml(filename):
             data = np.genfromtxt(measurement['observables'], names=True).view(np.recarray)
             measurement['observables'] = {name: data[name] for name in data.dtype.names}
         config['measurements'][i] = Measurement(**measurement)
-    config['sampler']['dim'] = len(config['params'])
     return config
 
-def create_file(hdf5_file, nwalkers, clobber=False):
+
+def create_file(hdf5_file, model, nwalkers=None, clobber=False):
     """Create a new hdf5 output file.
     hdf5_file : filename
-    nwalkers : int, number of walkers for sampling
+    model : DynamicalModel object
+    nwalkers : int, optional, if None then default to 10 x the number of free params
     clobber : bool, optional, if False, don't overwrite exisiting file
     """
     if clobber:
@@ -95,42 +98,43 @@ def create_file(hdf5_file, nwalkers, clobber=False):
     else:
         # fail if file exists
         mode = "w-"
-        
     with h5py.File(hdf5_file, mode) as f:
-        
         # dump model into 
         bytestring = pickle.dumps(model)
         f["model"] = np.void(bytestring)
-
         # create resizable chain dataset
         ndim = len(model.params)
+        if nwalkers is None:
+            nwalkers = 10 * ndim
         f.create_dataset("chain", (nwalkers, 0, ndim),
                          maxshape=(nwalkers, None, ndim),
                          compression="lzf")
-
         # dump version info
         f["version"] = _version_string()
-        
+    write_group(hdf5_file, model._settings, "settings")
 
 def read_model(hdf5_file):
     with h5py.File(hdf5_file, "r") as f:
-        return pickle.loads(f['model'].values.tostring())
+        return pickle.loads(f['model'].value.tostring())
 
+    
 def read_dataset(hdf5_file, path):
     """Return a stored dataset at the specified path"""
     with h5py.File(hdf5_file, "r") as f:
         return f[path].value
 
+    
 def write_group(hdf5_file, group, path=""):
     """Write the group dictionary to the path on the hdf5 file"""
     with h5py.File(hdf5_file) as f:
         for key, value in group.items():
             new_path = "/".join([path, key])
             if isinstance(value, dict):
-                write_group(hdf5_file, new_path, value)
+                write_group(hdf5_file, value, new_path)
             else:
                 f[new_path] = value
 
+                
 def read_group(hdf5_file, path):
     """Return a group at the specified path as a dictionary"""
     group = {}
@@ -139,16 +143,25 @@ def read_group(hdf5_file, path):
             if isinstance(value, h5py.Dataset):
                 group[key] = value.value
             elif isinstance(value, h5py.Group):
-                # yay recursion!
                 group[key] = read_group(hdf5_file, "/".join([path, key]))
             else:
                 raise ValueError("Unknown type: " + str(value))
         return group
+
     
-def append_to_chain(walkers, hdf5_file):
+def append_to_chain(hdf5_file, walkers):
     """Walkers have shape (nwalkers, ndim)"""
     with h5py.File(hdf5_file) as f:
         chain = f["chain"]
         chain.resize((chain.shape[0], chain.shape[1] + 1, chain.shape[2]))
         chain[:, -1, :] = walkers
         f.flush()
+
+def chain_shape(hdf5_file):
+    with h5py.File(hdf5_file) as f:
+        chain = f["chain"]
+        return chain.shape
+
+def visit(hdf5_file):
+    with h5py.File(hdf5_file) as f:
+        f.visititems(lambda key, value: print(key, value))

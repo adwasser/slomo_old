@@ -12,40 +12,56 @@ import multiprocess
 import numpy as np
 from emcee import EnsembleSampler
 
+from . import io
+from .models import DynamicalModel
 
-def sample(model):
+def init(yaml_file, clobber=False):
+    config = io.read_yaml(yaml_file)
+    model = DynamicalModel(**config)
+    try:
+        prefix = model._settings['prefix']
+    except KeyError:
+        prefix = "".join(yaml_file.split(".")[:-1])
+    try:
+        nwalkers = model._settings['nwalkers']
+    except KeyError:
+        nwalkers = 10 * len(model.params)        
+    io.create_file(prefix + ".hdf5", model, nwalkers=nwalkers, clobber=clobber)
+
+
+def mock():
+    pass
+
+def sample(hdf5_file, niter, threads=None, mock=False):
     """Sample from the DynamicalModel instance."""
-    
-    nwalkers = model._kwargs['sampler']['nwalkers']
+
+    model = io.read_model(hdf5_file)
+    settings = io.read_group(hdf5_file, "settings")
+    nwalkers = settings['nwalkers']
     ndim = len(model.params)
-    threads = model._kwargs['sampler']['threads']
+
+    max_threads = multiprocess.cpu_count()
+    if threads is None:
+        threads = max_threads
+    assert isinstance(threads, int)
+    if threads < 0:
+        threads = max_threads + threads
     if threads > 1:
         pool = multiprocess.Pool(threads)
     else:
         pool = None
+        
     sampler = EnsembleSampler(nwalkers, ndim, model, threads=threads, pool=pool)
-    settings = model._kwargs['settings']
-    prefix = settings['prefix']
-    outdir = settings['outdir']
-    restart = settings['restart']
-    niter = settings['niter']
-
-    output_prefix = os.path.join(outdir, prefix)
-
-    pickle.dump(model, open(output_prefix + '.pkl', 'wb'))
     
-    if not restart:
+    if io.chain_shape(hdf5_file)[1] == 0:
+        # starting new chain
         initial_guess = np.array(model.params._values)
         spread = 1e-4 * initial_guess
         positions = [initial_guess + spread * np.random.randn(ndim)
                      for i in range(nwalkers)]
-        with open(output_prefix + '.chain', 'w') as f:
-            f.write(header(model))
     else:
         # override the given inital guess positions with the last walker positions
-        with open(output_prefix + '.chain', 'r') as f:
-            d = deque(f, maxlen=nwalkers)
-            positions = [np.array([float(s) for s in string.split()[1:]]) for string in d]
+        positions = io.read_dataset(hdf5_file, "chain")[:, -1, :]
             
     count = 0
     start_time = time.time()
@@ -53,8 +69,5 @@ def sample(model):
         print('Iteration {:4d}: {:.4e} s'.format(count + 1, time.time() - start_time))
         count += 1
         position = result[0]
-        # save chain
-        with open(output_prefix + '.chain', 'a') as f:
-            for k in range(position.shape[0]):
-                f.write("{0:4d} {1:s}\n".format(k, " ".join(map(str, position[k]))))
+        io.append_to_chain(hdf5_file, positions)
     return sampler

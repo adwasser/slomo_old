@@ -9,7 +9,7 @@ from .parameters import ParameterList
 
 
 class DynamicalModel:
-    def __init__(self, params, constants, tracers, mass_model, measurements, **kwargs):
+    def __init__(self, params, constants, tracers, mass_model, measurements, **settings):
         """Complete description of the dynamical model, including measurement model, data, and priors.
 
         Parameters
@@ -19,14 +19,14 @@ class DynamicalModel:
         tracers : list of Tracer objects
         mass_model : enclosed mass function
         measurements : list of Measurement objects
-        kwargs : other keyword arguments to store for posterity
+        settings : other keyword arguments to store for posterity
         """
         self.params = params
         self.constants = constants
         self.tracers = tracers
         self.mass_model = mass_model
         self.measurements = measurements
-        self._kwargs = kwargs
+        self._settings = settings
         
     def __repr__(self):
         return "<{}: {}, {:d} tracers>".format(self.__class__.__name__,
