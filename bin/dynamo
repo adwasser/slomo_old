@@ -3,11 +3,40 @@
 import argparse
 import dynamo
 
-parser = argparse.ArgumentParser(description="Runs dynamo on the input config file.")
-parser.add_argument("config", help="Configuration file, in YAML format, as specified in docs.")
-args = parser.parse_args()
+parser = argparse.ArgumentParser(description="Construct and run dynamical models.")
+parser.add_argument('--verbose', action='store_true', help='not implemented yet')
 
-model = dynamo.read(args.config)
-sampler = dynamo.sample(model)
+subparsers = parser.add_subparsers(help='Available commands')
+
+# init command
+parser_init = subparsers.add_parser("init", help="Construct a model")
+parser_init.add_argument("config",
+                         help="Config file in YAML format.  See docs for required entries.")
+parser_init.add_argument("--clobber", action="store_true",
+                         help="If selected, overwrite existing hdf5 output file.")
+
+# sample command
+parser_sample = subparsers.add_parser("sample", help="Sample from an existing model.")
+parser_sample.add_argument("hdf5", help="hdf5 output file")
+parser_sample.add_argument("niter", type=int,
+                           help="Number of iterations to run.")
+parser_sample.add_argument("--mock", action="store_true",
+                           help="If selected, sample from mock data instead of stored data.")
+
+# run command
+parser_run = subparsers.add_parser("run", help="Shortcut for init and sample for new model output.")
+parser_run.add_argument("config",
+                        help="Config file in YAML format.  See docs for required entries.")
+parser_run.add_argument("niter", type=int,
+                        help="Number of iterations to run.")
+
+# mock command
+parser_mock = subparsers.add_parser("mock", help="Create mock data from specified model parameters.")
+parser_mock.add_argument("hdf5", help="hdf5 output file")
+
+args = parser.parse_args()
+print(args)
+# ... do things with args ...
+
 
 

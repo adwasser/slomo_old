@@ -12,18 +12,6 @@ import multiprocess
 import numpy as np
 from emcee import EnsembleSampler
 
-def header(model):
-    """Generate header for outputs."""
-    params_line = "# params: " + " ".join(model.params.names) + "\n"
-    cwd = os.getcwd()
-    gitdir, _ = os.path.split(inspect.getfile(model.__class__))
-    result = subprocess.run(['git', 'rev-parse', 'HEAD'],
-                            check=True, stdout=subprocess.PIPE)
-    if result.returncode == 0:
-        checksum = result.stdout.decode('utf-8')
-        return params_line + "# git checksum: " + checksum + "\n"
-    return params_line
-
 
 def sample(model):
     """Sample from the DynamicalModel instance."""

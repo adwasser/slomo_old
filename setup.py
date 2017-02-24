@@ -5,7 +5,9 @@ here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, "_version.py"), encoding="utf-8") as f:
     # sets version
-    exec(f.readline())
+    line = f.readline()
+    __version__ = line.split("=")[1].strip("\"' \n")
+    
 
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()

@@ -18,18 +18,20 @@ from .parameters import (Parameter, ParameterList)
 from . import (pdf, likelihood,
                mass, anisotropy,
                surface_density, volume_density)
+from . import __version__, __path__
 
-def checksum():
-    """Get the git checksum."""
+def _version_string():
+    """Get the git checksum or version number."""
     cwd = os.getcwd()
-    gitdir, _ = os.path.split(inspect.getfile(pdf))
-    os.chdir(gitdir)
+    topdir = os.path.join(__path__[0], "..")
+    os.chdir(topdir)
     result = subprocess.run(['git', 'rev-parse', 'HEAD'],
                             check=True, stdout=subprocess.PIPE)
     os.chdir(cwd)
     if result.returncode == 0:
         checksum = result.stdout.decode('utf-8').strip()
         return checksum
+    return __version__
 
 
 def read_yaml(filename):
@@ -79,29 +81,74 @@ def read_yaml(filename):
             data = np.genfromtxt(measurement['observables'], names=True).view(np.recarray)
             measurement['observables'] = {name: data[name] for name in data.dtype.names}
         config['measurements'][i] = Measurement(**measurement)
-
     config['sampler']['dim'] = len(config['params'])
-    
-    model = DynamicalModel(**config)
-    return model
+    return config
 
-def write_model(model, hdf5_file):
-    bytestring = pickle.dumps(model)
-    with h5py.File(hdf5_file) as f:
-        f['model'] = np.void(bytestring)
-
+def create_file(hdf5_file, nwalkers, clobber=False):
+    """Create a new hdf5 output file.
+    hdf5_file : filename
+    nwalkers : int, number of walkers for sampling
+    clobber : bool, optional, if False, don't overwrite exisiting file
+    """
+    if clobber:
+        mode = "w"
+    else:
+        # fail if file exists
+        mode = "w-"
         
-def read_model(hdf5_file):
-    with h5py.File(hdf5_file) as f:
-        return pickle.loads(f['model'].values.tostring())
-    
-def read_chain(hdf5_file):
-    """Shape is (nwalkers, niterations, ndim)"""
-    with h5py.File(hdf5_file) as f:
-        flatchain = f['chain'].values
-    # remove walker label
-    walker_labels = flatchain[:,0].flatten()
-    nwalkers = int(walker_labels[-1]) + 1
-    flatchain = flatchain[:,1:]
-    return flatchain.reshape((nwalkers, -1, flatchain.shape[-1]))
+    with h5py.File(hdf5_file, mode) as f:
+        
+        # dump model into 
+        bytestring = pickle.dumps(model)
+        f["model"] = np.void(bytestring)
 
+        # create resizable chain dataset
+        ndim = len(model.params)
+        f.create_dataset("chain", (nwalkers, 0, ndim),
+                         maxshape=(nwalkers, None, ndim),
+                         compression="lzf")
+
+        # dump version info
+        f["version"] = _version_string()
+        
+
+def read_model(hdf5_file):
+    with h5py.File(hdf5_file, "r") as f:
+        return pickle.loads(f['model'].values.tostring())
+
+def read_dataset(hdf5_file, path):
+    """Return a stored dataset at the specified path"""
+    with h5py.File(hdf5_file, "r") as f:
+        return f[path].value
+
+def write_group(hdf5_file, group, path=""):
+    """Write the group dictionary to the path on the hdf5 file"""
+    with h5py.File(hdf5_file) as f:
+        for key, value in group.items():
+            new_path = "/".join([path, key])
+            if isinstance(value, dict):
+                write_group(hdf5_file, new_path, value)
+            else:
+                f[new_path] = value
+
+def read_group(hdf5_file, path):
+    """Return a group at the specified path as a dictionary"""
+    group = {}
+    with h5py.File(hdf5_file, "r") as f:
+        for key, value in f[path].items():
+            if isinstance(value, h5py.Dataset):
+                group[key] = value.value
+            elif isinstance(value, h5py.Group):
+                # yay recursion!
+                group[key] = read_group(hdf5_file, "/".join([path, key]))
+            else:
+                raise ValueError("Unknown type: " + str(value))
+        return group
+    
+def append_to_chain(walkers, hdf5_file):
+    """Walkers have shape (nwalkers, ndim)"""
+    with h5py.File(hdf5_file) as f:
+        chain = f["chain"]
+        chain.resize((chain.shape[0], chain.shape[1] + 1, chain.shape[2]))
+        chain[:, -1, :] = walkers
+        f.flush()
