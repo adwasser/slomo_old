@@ -66,6 +66,6 @@ def sample(hdf5_file, niter, threads=None, mock=False):
     for result in sampler.sample(positions, iterations=niter, storechain=False):
         print('Iteration {:4d}: {:.4e} s'.format(count + 1, time.time() - start_time))
         count += 1
-        position = result[0]
-        io.append_to_chain(hdf5_file, positions)
+        new_positions = result[0]
+        io.append_to_chain(hdf5_file, new_positions)
     return sampler
