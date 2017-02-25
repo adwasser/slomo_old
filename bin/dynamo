@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import argparse
 from dynamo.run import init, sample
 
@@ -48,7 +49,12 @@ if args.command == "init":
     init(args.config, args.clobber)
 elif args.command == "sample":
     sample(args.hdf5, args.niter)
+elif args.command == "run":
+    init(args.config)
+    outfile = args.config.split(".")[0] + ".hdf5"
+    sample(outfile, args.niter)
 else:
     raise NotImplementedError("Command " + args.command + " not implemented yet.")
+
 
 

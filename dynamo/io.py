@@ -4,6 +4,7 @@ import os
 import subprocess
 import inspect
 from collections import deque
+import warnings
 
 import numpy as np
 
@@ -13,7 +14,7 @@ try:
     import ruamel.yaml as yaml
 except ImportError as e:
     import yaml
-
+    
 from .models import (Tracer, Measurement, DynamicalModel)
 from .utils import get_function
 from .parameters import (Parameter, ParameterList)
@@ -21,6 +22,8 @@ from . import (pdf, likelihood,
                mass, anisotropy,
                surface_density, volume_density)
 from . import __version__, __path__
+
+warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
 
 def _version_string():
     """Get the git checksum or version number."""

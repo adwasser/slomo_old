@@ -18,24 +18,22 @@ from .models import DynamicalModel
 def init(yaml_file, clobber=False):
     config = io.read_yaml(yaml_file)
     model = DynamicalModel(**config)
-    try:
-        prefix = model._settings['prefix']
-    except KeyError:
-        prefix = "".join(yaml_file.split(".")[:-1])
+    outfile = yaml_file.split(".")[0] + ".hdf5"    
     try:
         nwalkers = model._settings['nwalkers']
     except KeyError:
-        nwalkers = 10 * len(model.params)        
-    io.create_file(prefix + ".hdf5", model, nwalkers=nwalkers, clobber=clobber)
-
+        nwalkers = 10 * len(model.params)
+    io.create_file(outfile, model, nwalkers=nwalkers, clobber=clobber)
 
 def mock():
     pass
 
 def sample(hdf5_file, niter, threads=None, mock=False):
     """Sample from the DynamicalModel instance."""
+    assert io._version_string() == io.read_dataset(hdf5_file, "version")
 
     model = io.read_model(hdf5_file)
+
     settings = io.read_group(hdf5_file, "settings")
     nwalkers = settings['nwalkers']
     ndim = len(model.params)
