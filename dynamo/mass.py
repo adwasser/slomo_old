@@ -51,6 +51,23 @@ def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
     return L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
+def M_NFW(r, M200, dist, **kwargs):
+    """NFW halo with mass-concentration relation from Mandelbaum+2008."""
+    # distance conversion
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    h = 0.678
+    rho_crit = 277.46 * h ** 2
+    c0 = 4.6
+    beta = 0.13
+    M0 = h * 1e14
+    # Mandelbaum+2008 relation
+    c200 = c0 * (M200 / M0) ** beta
+    f = lambda x: np.log(1 + x) - x / (1 + x)
+    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit)) ** (1 / 3)
+    return M200 * f(r * c200 / r200) / f(c200)
+
+
 def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     """Enclosed dark matter, parameterized as a generalized NFW profile.
     r is the input radius to evaluate enclosed mass.
@@ -89,17 +106,20 @@ def M_sersic(r, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     return upsilon * L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
-def M_gNFW_constant_IMF(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+def M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     """gNFW halo with contant M/L and Sersic luminosity profile
     R is in arcsec, converted to kpc with dist (in kpc)
     """
     return M_gNFW(R, r_s, rho_s, gamma, dist) + M_sersic(R, upsilon, I0_s, Re_s, n_s, dist)
 
 
-def M_gNFW_variable_IMF(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
+def M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
     """gNFW halo with Sersic mass stellar mass profile from variable IMF
     Here the sersic profile must be a mass surface density, not a luminosity
     profile.
     R is in arcsec, converted to kpc with dist (in kpc)
     """
     return M_gNFW(R, r_s, rho_s, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+
+def M_NFW_constant_ML(R, M200, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+    return M_NFW(R, M200, dist) + upsilon * L_sersic(R, I0_s, Re_s, n_s, dist)
