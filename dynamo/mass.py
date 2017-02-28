@@ -35,7 +35,7 @@ def L_sersic(r, I0, Re, n, dist):
     kpc_per_arcsec = dist * radians_per_arcsec
     r = r * kpc_per_arcsec
     Re = Re * kpc_per_arcsec
-    I0 = I0 * kpc_per_arcsec ** 2
+    I0 = I0 * (4 * np.pi * np.pi * dist ** 2)
     
     p = p_ln(n)
     b = b_cb(n)
@@ -123,3 +123,6 @@ def M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
 
 def M_NFW_constant_ML(R, M200, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     return M_NFW(R, M200, dist) + upsilon * L_sersic(R, I0_s, Re_s, n_s, dist)
+
+def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
+    return M_NFW(R, M200, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)

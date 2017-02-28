@@ -39,6 +39,22 @@ def lnbeta(x, alpha, beta):
     term3 = -np.log(special.beta(alpha, beta))
     return term1 + term2 + term3
 
+def lnexp(x, beta):
+    """Log of an exponential distribution
+    x : float, random variable
+    beta : survival parameter, inverse of rate lambda
+    """
+    if x < 0:
+        return -np.inf
+    return -np.log(beta) - x / beta
+
+
+def lnexp_truncated(x, beta, upper):
+    """Log of exponential distribution, truncated at upper limit"""
+    if x > upper:
+        return -np.inf
+    return lnexp(x, beta)
+
 
 def lngauss(x, mu, sigma):
     """Log of gaussian distribution.
@@ -53,6 +69,26 @@ def lngauss(x, mu, sigma):
     -------
     lnlike : float in (-inf, 0)
     """
+    chi2 = ((x - mu) / sigma)**2
+    norm = np.log(2 * np.pi * sigma**2)
+    return -0.5 * (chi2 + norm)
+
+
+def lngauss_truncated(x, mu, sigma, lower, upper):
+    """Log of truncated gaussian distribution.
+
+    Parameters
+    ----------
+    x : random variable
+    mu : mean
+    sigma : std
+
+    Returns
+    -------
+    lnlike : float in (-inf, 0)
+    """
+    if x < lower or x > upper:
+        return -np.inf
     chi2 = ((x - mu) / sigma)**2
     norm = np.log(2 * np.pi * sigma**2)
     return -0.5 * (chi2 + norm)
