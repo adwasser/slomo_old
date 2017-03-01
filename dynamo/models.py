@@ -22,7 +22,7 @@ class DynamicalModel:
         settings : other keyword arguments to store for posterity
         """
         self.params = params
-        self.constants = constants
+        self.constants = constants if constants is not None else {}
         self.tracers = tracers
         self.mass_model = mass_model
         self.measurements = measurements
