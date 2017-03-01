@@ -17,7 +17,7 @@ label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
              "beta_b": r"$\beta_b$", "beta_r": r"$\beta_r$", "dist": r"$D$",
              "phi_b": r"$\phi_b$", "alpha_s": r"$\alpha_*$",
              "I0_s": r"$\Sigma_{0, *}$", "Re_s": r"$R_{\mathrm{eff}, *}$",
-             "n_s": r"$n_*$", "r_a": r"$r_a$"}
+             "n_s": r"$n_*$", "r_a": r"$r_a$", "M200": r"M$_{200}$"}
 
 def plotstyle():
     mpl.rc("figure", figsize=(12, 8))
