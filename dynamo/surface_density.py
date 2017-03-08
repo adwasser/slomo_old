@@ -40,7 +40,6 @@ def I_sersic(R, I0, Re, n, dist):
     kpc_per_arcsec = dist * radians_per_arcsec
     R = R * kpc_per_arcsec
     Re = Re * kpc_per_arcsec
-    I0 = I0 * kpc_per_arcsec ** 2    
     I = I0 * np.exp(-b_cb(n) * (R / Re)**(1. / n))
     return I
 
