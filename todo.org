@@ -8,13 +8,8 @@
       an analytical form not exist
 
 * collect all input/output into a new io module
-  - get rid of warning with yaml.load
-  - takes read_* functions currently in plots
-  - ensures that there is a warning before overwriting files
-  - switch over to HDF5 for unified output?
     both sample and mock should include input settings in the output
 
 * figure out better scheme for lnlike_gmm
   - and correspondingly the mock GMM data
 
-* include options (e.g., run, mock, plot) for executable script

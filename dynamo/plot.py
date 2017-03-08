@@ -10,7 +10,7 @@ from emcee.autocorr import integrated_time
 from corner import corner
 
 from .utils import get_params, radians_per_arcsec
-from . import mass
+from . import mass, io
 
 label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
              "upsilon": r"$\Upsilon_*$", "beta_s": r"$\beta_s$",
@@ -30,23 +30,11 @@ def plotstyle():
     mpl.rc("hist", bins="auto")
 plotstyle()
 
-def read_chain(filename):
-    """Shape is (nwalkers, niterations, ndim)"""
-    flatchain = np.loadtxt(filename)
-    # remove walker label
-    walker_labels = flatchain[:,0].flatten()
-    nwalkers = int(walker_labels[-1]) + 1
-    flatchain = flatchain[:,1:]
-    return flatchain.reshape((nwalkers, -1, flatchain.shape[-1]))
-
-def read_model(filename):
-    return pickle.load(open(filename, 'rb'))
-
-def walker_plot(model, chain, skip_step=100):
+def walker_plot(outfile, skip_step=100):
     """Does the walker choose the path or does the path choose the walker?"""
-    if isinstance(chain, str):
-        chain = read_chain(chain)
-        
+    chain = io.read_dataset(outfile, "chain")
+    model = io.read_model(outfile)
+    
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
     labels = [label_map[name] for name in model.params.names]
@@ -69,25 +57,21 @@ def walker_plot(model, chain, skip_step=100):
     return fig, axarr
 
 
-def autocorr_plot(model, chain, skip_step=100, **kwargs):
+def autocorr_plot(outfile, skip_step=100, **kwargs):
     """0 is good, 1 is bad"""
-    if isinstance(chain, str):
-        chain = read_chain(chain)
-
+    chain = io.read_dataset(outfile, "chain")
+    model = io.read_model(outfile)    
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
     labels = [label_map[name] for name in model.params.names]
     flatchain = chain.reshape((-1, ndim))
-    nsamples = flatchain.shape[0]
-    
+    nsamples = flatchain.shape[0]    
     acorr = autocorr_function(flatchain)
     # lower integrated autocorrelation times are better
-
     try:
         acorr_times = integrated_time(flatchain, **kwargs)
     except:
-        acorr_times = np.zeros(ndim)
-        
+        acorr_times = np.zeros(ndim)        
     n = skip_step
     steps = n * np.arange(1, flatchain.shape[0]/n + 1)
     fig, axarr = plt.subplots(ndim, sharex=True, figsize=(4, 1 * ndim))
@@ -96,9 +80,10 @@ def autocorr_plot(model, chain, skip_step=100, **kwargs):
         # rough estimate of uncertainty fraction on mean value
         unc = np.sqrt(acorr_times[i] / nsamples)
         axarr[i].plot(steps, acorr[::n, i], alpha=0.5)
-        axarr[i].text(0.95, 0.90, label_str + '{:.2e}'.format(unc),
-                      transform=axarr[i].transAxes, horizontalalignment='right',
-                      verticalalignment='top')
+        if unc != 0:
+            axarr[i].text(0.95, 0.90, label_str + '{:.2e}'.format(unc),
+                          transform=axarr[i].transAxes, horizontalalignment='right',
+                          verticalalignment='top')
         axarr[i].set_ylabel(labels[i])
         axarr[i].set_yticks([0, 0.5, 1])
     axarr[-1].set_xlabel('Iterations')
@@ -107,18 +92,15 @@ def autocorr_plot(model, chain, skip_step=100, **kwargs):
     return fig, axarr
 
     
-def corner_plot(model, chain, burn_fraction=0.5, **kwargs):
+def corner_plot(outfile, burn_fraction=0.5, **kwargs):
     """Make an enormous corner plot, rejecting the burn-in iterations at the start."""
-    if isinstance(chain, str):
-        chain = read_chain(chain)
-
+    chain = io.read_dataset(outfile, "chain")
+    model = io.read_model(outfile)    
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
     labels = [label_map[name] for name in model.params.names]
-    
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
-        
     kwargs.update({'labels': labels, 'quantiles': [.16, .5, .84],
                    'hist_kwargs': {'lw': 2}, 'use_math_text': True,
                    'show_titles': True, 'title_kwargs': {'fontsize': 16},
@@ -129,19 +111,18 @@ def corner_plot(model, chain, burn_fraction=0.5, **kwargs):
     return fig
 
 
-def mass_plot(model, chain, burn_fraction=0.5,
+def mass_plot(outfile, burn_fraction=0.5,
               rmax=500, nsamples=10000, size=50,
-              dm_model=mass.M_gNFW, st_model=mass.M_sersic):
+              dm_model=mass.M_NFW, st_model=mass.L_sersic_s):
     """rmax: maximum radius in kpc, nsamples: number of posterior samples"""
-    if isinstance(chain, str):
-        chain = read_chain(chain)
-
+    chain = io.read_dataset(outfile, "chain")
+    model = io.read_model(outfile)    
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
-    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
     
+    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
     radii = np.logspace(0, np.log10(rmax), size)    
     dm_profiles = np.zeros((nsamples, size))
     st_profiles = np.zeros((nsamples, size))
@@ -172,9 +153,4 @@ def mass_plot(model, chain, burn_fraction=0.5,
     ax.legend(loc='best')
 
     return fig, ax
-    
-def data_plot(model, chain):
-    pass
-
-
     

@@ -19,6 +19,16 @@ def _r200(mass_function, mass_params,
     rv = optimize.brentq(f, rlow, rhigh, disp=True)
     return rv
 
+def _gNFW_to_NFW(rho_s, r_s, gamma):
+    """(rho_s, r_s, gamma) -> (M200, c200)"""
+    h = 0.678
+    rho_crit = 277.46 * h ** 2
+    M = lambda r: M_gNFW(r, r_s, rho_s, gamma, dist=1 / radians_per_arcsec)
+    r200 = _r200(M, (), delta_c=200, rho_crit=rho_crit)
+    M200 = 4 * np.pi * r200 ** 3 / 3 * (200 * rho_crit)
+    c200 = r200 / r_s
+    return M200, c200
+    
 
 def d_n(n):
     """Einasto coefficient, as described by Retana-Montenegro+2012."""
@@ -35,7 +45,7 @@ def L_sersic(r, I0, Re, n, dist):
     kpc_per_arcsec = dist * radians_per_arcsec
     r = r * kpc_per_arcsec
     Re = Re * kpc_per_arcsec
-    I0 = I0 * (4 * np.pi * np.pi * dist ** 2)
+    # I0 = I0 * (4 * np.pi / radians_per_arcsec ** 2) 
     
     p = p_ln(n)
     b = b_cb(n)
