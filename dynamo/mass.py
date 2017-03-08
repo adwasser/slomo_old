@@ -39,6 +39,8 @@ def d_n(n):
 def L_sersic(r, I0, Re, n, dist):
     """Luminosity associated with a Sersic surface density profile for a constant 
     mass-to-light ratio upsilon, at a deprojected radius, r.
+    Note that the scipy implementation of the incomplete gamma function includes the term 1 / Gamma(a), so that
+    the standard incomplete gamma function is gamma(a, x) = special.gamma(a) * special.gammainc(a, x)
     """
     # distance dependent conversions
     kpc_per_arcsec = dist * radians_per_arcsec
@@ -47,8 +49,8 @@ def L_sersic(r, I0, Re, n, dist):
     p = p_ln(n)
     b = b_cb(n)
     a = Re / b**n
-    return (2 * np.pi * I0 * a ** 2 * special.gamma(2 * n) /
-            special.gammainc((3 - p) * n, (r / a) ** (1 / n)))
+    L = 2 * np.pi * I0 * a ** 2 * special.gamma(2 * n) * special.gammainc((3 - p) * n, (r / a) ** (1 / n))
+    return L
 
 
 def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
