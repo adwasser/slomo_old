@@ -40,22 +40,16 @@ def L_sersic(r, I0, Re, n, dist):
     """Luminosity associated with a Sersic surface density profile for a constant 
     mass-to-light ratio upsilon, at a deprojected radius, r.
     """
-
     # distance dependent conversions
     kpc_per_arcsec = dist * radians_per_arcsec
     r = r * kpc_per_arcsec
     Re = Re * kpc_per_arcsec
-    # I0 = I0 * (4 * np.pi / radians_per_arcsec ** 2) 
-    
     p = p_ln(n)
     b = b_cb(n)
     a = Re / b**n
-    rho0 = I0 * special.gamma(2 * n) / (2 * a * special.gamma((3 - p) * n))
-    x = (r / a)**(1 / n)
-    factor1 = 4 * np.pi * rho0 * a**3 * n
-    factor2 = special.gammainc((3 - p) * n, x)
-    factor3 = special.gamma((3 - p) * n)
-    return factor1 * factor2 * factor3
+    return (2 * np.pi * I0 * a ** 2 * special.gamma(2 * n) /
+            special.gammainc((3 - p) * n, (r / a) ** (1 / n)))
+
 
 def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
     return L_sersic(r, I0_s, Re_s, n_s, dist)
