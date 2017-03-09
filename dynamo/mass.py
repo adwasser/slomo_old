@@ -49,8 +49,8 @@ def L_sersic(r, I0, Re, n, dist):
     p = p_ln(n)
     b = b_cb(n)
     a = Re / b**n
-    L = 2 * np.pi * I0 * a ** 2 * special.gamma(2 * n) * special.gammainc((3 - p) * n, (r / a) ** (1 / n))
-    return L
+    Ltot = 2 * np.pi * n * I0 * a ** 2 * special.gamma(2 * n)
+    return Ltot * special.gammainc((3 - p) * n, (r / a) ** (1 / n))
 
 
 def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
