@@ -21,8 +21,8 @@ def _r200(mass_function, mass_params,
 
 def _gNFW_to_NFW(rho_s, r_s, gamma):
     """(rho_s, r_s, gamma) -> (M200, c200)"""
-    h = 0.678
-    rho_crit = 277.46 * h ** 2
+    h = 0.678 # Planck 2015
+    rho_crit = 277.46 * h ** 2 # Msun / kpc^3
     M = lambda r: M_gNFW(r, r_s, rho_s, gamma, dist=1 / radians_per_arcsec)
     r200 = _r200(M, (), delta_c=200, rho_crit=rho_crit)
     M200 = 4 * np.pi * r200 ** 3 / 3 * (200 * rho_crit)
@@ -95,6 +95,21 @@ def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     factor2 = (r / r_s)**omega
     factor3 = special.hyp2f1(omega, omega, omega + 1, -r / r_s)
     return factor1 * factor2 * factor3
+
+
+def M_gNFW_200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
+    """gNFW halo parameterized with mass and concentration
+    h = H0 / (100 km/s/Mpc) = 0.678 from Planck 2015
+    """
+    # distance conversion
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    rho_crit = 277.46 * h ** 2 # Msun / kpc^3
+    omega = 3 - gamma
+    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit)) ** (1 / 3)
+    r_s = r200 / c200
+    rho_s = rho_crit * 200 * omega / 3 * c200 ** gamma * special.hyp2f1(omega, omega, omega + 1, -c200)
+    return M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs)
 
 
 def M_log(r, r_c, rho_c) :
