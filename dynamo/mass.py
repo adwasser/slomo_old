@@ -111,7 +111,11 @@ def M_gNFW_200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
     rho_s = rho_crit * 200 * omega / 3 * c200 ** gamma * special.hyp2f1(omega, omega, omega + 1, -c200)
     return M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs)
 
-
+def M_gNFW_dm(r, M200, gamma, dist, h=0.678, **kwargs):
+    """Mass-concentration relation from Dutton & Maccio 2014"""
+    c200 = 10 ** 0.905 * (M200 * h / 1e12) ** (-0.101)
+    return M_gNFW_200(r, M200, c200, gamma, dist, h=h, **kwargs)
+    
 def M_log(r, r_c, rho_c) :
     """Cumulative Mass profile from a logarithmic (LOG) potential profile."""
     return rho_c * (3 + (r / r_c)**2) / (1 + (r / r_c)**2)**2
@@ -147,3 +151,6 @@ def M_NFW_constant_ML(R, M200, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
 
 def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
     return M_NFW(R, M200, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+
+def M_gNFW_dm_variable_ML(R, M200, gamma, I0_s, Re_s, n_s, dist, **kwargs):
+    return M_gNFW_dm(R, M200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)

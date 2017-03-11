@@ -61,7 +61,8 @@ def read_yaml(filename):
     config['params'] = ParameterList(param_list)
 
     # load mass
-    config['mass_model'] = get_function(mass, config['mass_model'])
+    mass_model = get_function(mass, config['mass_model'])
+    config['mass_model'] = mass_model
 
     # load tracers
     tracer_list = config['tracers']
@@ -70,6 +71,7 @@ def read_yaml(filename):
             if key == 'name':
                 continue
             tracer[key] = get_function(tracer_models[key], tracer[key])
+        tracer['mass_model'] = mass_model
         config['tracers'][i] = Tracer(**tracer)
 
     # load likelihoods
