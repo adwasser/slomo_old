@@ -51,7 +51,7 @@ class DynamicalModel:
         lnlike = 0
         for ll in self.measurements:
             try:
-                lnlike += ll(self.mass_model, kwargs)
+                lnlike += ll(kwargs)
             except FloatingPointError as e:
                 print(ll)
                 print(e, "for params", param_values)
