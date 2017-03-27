@@ -7,6 +7,10 @@ def lnlike_continuous(sigma_jeans, sigma, dsigma):
     return np.sum(lngauss(sigma, sigma_jeans, dsigma))
 
 
+def lnlike_density(I_model, I, dI):
+    return np.sum(lngauss(I, I_model, dI))
+
+
 def lnlike_discrete(sigma_jeans, v, dv):
     """Log of gaussian likelihood of measurements with predicted v_rms, with 
     mu = 0.

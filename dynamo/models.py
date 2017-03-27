@@ -100,18 +100,17 @@ class Tracer:
 
 class Measurement:
 
-    def __init__(self, likelihood, tracers, observables):
+    def __init__(self, likelihood, model, observables):
         """Likelihood function with data.
 
         Parameters
         ----------
         likelihood : (sigma_jeans, *data, **kwargs) -> L(sigma_jeans, *data, *kwargs)
-        tracers : list of Tracer instances
-        observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc]
+        model : list of f(R, **kwargs) -> observable
+        observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc] | I
         """
-        assert likelihood.__name__ in ['lnlike_continuous', 'lnlike_discrete', 'lnlike_gmm']
         self.likelihood = likelihood
-        self.tracers = tracers
+        self.model = model
         self.radii = observables.pop('R')
         self.observables = observables
         
@@ -131,13 +130,16 @@ class Measurement:
         ll : log likelihood, in (-inf, 0)
         """
         if self.likelihood.__name__ in ['lnlike_continuous', 'lnlike_discrete']:
-            sigma_jeans = self.tracers[0](self.radii, kwargs)
+            sigma_jeans = self.model[0](self.radii, kwargs)
             return self.likelihood(sigma_jeans, **self.observables)
+        elif self.likelihood.__name__ == "lnlike_density":
+            I_model = self.model[0](self.radii, **kwargs)
+            return self.likelihood(I_model, **self.observables)
         else:
-            assert self.likelihood.__name__ == 'lnlike_gmm'
+            assert self.likelihood.__name__ == 'lnlike_gmm', self.likelihood.__name__ + " is not available."
             # TODO, find a smarter way of dealing with GMM likelihood
-            sigma_b = self.tracers[0](self.radii, kwargs)
-            sigma_r = self.tracers[1](self.radii, kwargs)
+            sigma_b = self.model[0](self.radii, kwargs)
+            sigma_r = self.model[1](self.radii, kwargs)
             return self.likelihood(sigma_b, sigma_r, **self.observables, **kwargs)
 
         

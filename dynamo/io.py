@@ -40,11 +40,13 @@ def _version_string():
 
 
 def read_yaml(filename):
-    """Read in the config file and construct a model to run."""
+    """Read in the config file and construct a model to run.  
+    Spaghetti code not even a parent could love.
+    """
 
-    tracer_models = {'anisotropy': anisotropy,
-                     'surface_density': surface_density,
-                     'volume_density': volume_density}
+    tracer_modules = {'anisotropy': anisotropy,
+                      'surface_density': surface_density,
+                      'volume_density': volume_density}
 
     with open(filename) as f:
         config = yaml.load(f)
@@ -70,20 +72,33 @@ def read_yaml(filename):
         for key in tracer:
             if key == 'name':
                 continue
-            tracer[key] = get_function(tracer_models[key], tracer[key])
+            tracer[key] = get_function(tracer_modules[key], tracer[key])
         tracer['mass_model'] = mass_model
         config['tracers'][i] = Tracer(**tracer)
 
     # load likelihoods
     measurement_list = config['measurements']
-    tracer_dict = {tracer.name: i for i, tracer in enumerate(config['tracers'])}
+    tracer_dict = {tracer.name: tracer for tracer in config['tracers']}
     for i, measurement in enumerate(measurement_list):
         measurement['likelihood'] = get_function(likelihood, measurement['likelihood'])
         # replace single tracer with list
-        if not isinstance(measurement['tracers'], list):
-            measurement['tracers'] = [measurement['tracers']]
-        measurement['tracers'] = [config['tracers'][tracer_dict[tracer]] for
-                                  tracer in measurement['tracers']]
+        if not isinstance(measurement['model'], list):
+            measurement['model'] = [measurement['model']]
+        models = []
+        for model in measurement['model']:
+            if model in tracer_dict.keys():
+                model_function = tracer_dict[model]
+            else:
+                for module in tracer_modules.values():
+                    try:
+                        model_function = get_function(module, model)
+                        break
+                    except AttributeError:
+                        model_function = None
+                if model_function is None:
+                    raise ValueError(model + " is not found in tracers or available functions!")
+            models.append(model_function)
+        measurement['model'] = models
         if isinstance(measurement['observables'], str):
             data = np.genfromtxt(measurement['observables'], names=True).view(np.recarray)
             measurement['observables'] = {name: data[name] for name in data.dtype.names}
@@ -113,7 +128,7 @@ def create_file(hdf5_file, model, nwalkers=None, clobber=False):
             nwalkers = 10 * ndim
         f.create_dataset("chain", (nwalkers, 0, ndim),
                          maxshape=(nwalkers, None, ndim),
-                         compression="lzf")
+                         compression="gzip")
         # dump version info
         f["version"] = _version_string()
     write_group(hdf5_file, model._settings, "settings")
