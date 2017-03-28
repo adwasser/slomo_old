@@ -111,19 +111,29 @@ def corner_plot(outfile, burn_fraction=0.5, **kwargs):
     return fig
 
 
-def mass_plot(outfile, burn_fraction=0.5,
+def mass_plot(outfile, burn_fraction=0.5, rmin=0.1,
               rmax=500, nsamples=10000, size=50,
-              dm_model=mass.M_NFW, st_model=mass.L_sersic_s):
+              dm_model=mass.M_gNFW, st_model=mass.L_sersic_s):
     """rmax: maximum radius in kpc, nsamples: number of posterior samples"""
     chain = io.read_dataset(outfile, "chain")
-    model = io.read_model(outfile)    
+    model = io.read_model(outfile)
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
+
+    if "dist" in model.params.names:
+        i = np.arange(ndim)[model.params.names == "dist"][0]
+        if model.params[i].transform is None:
+            dist = samples[:, i]
+        else:
+            dist = model.params[i].transform(samples[:, i])
+    else:
+        dist = model.constants["dist"]
+    kpc_per_arcsec = np.median(dist * radians_per_arcsec)
     
     idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
-    radii = np.logspace(0, np.log10(rmax), size)    
+    radii = np.logspace(np.log10(rmin), np.log10(rmax), size)    
     dm_profiles = np.zeros((nsamples, size))
     st_profiles = np.zeros((nsamples, size))
     for i, param_values in enumerate(samples[idx]):
@@ -136,7 +146,7 @@ def mass_plot(outfile, burn_fraction=0.5,
     M_dm_low, M_dm_med, M_dm_high = np.percentile(dm_profiles, [16, 50, 84], axis=0)
     M_star_low, M_star_med, M_star_high = np.percentile(st_profiles, [16, 50, 84], axis=0)
     M_tot_low, M_tot_med, M_tot_high = np.percentile(M_tot, [16, 50, 84], axis=0)
-    r = radii
+    r = radii / kpc_per_arcsec
     
     fig, ax = plt.subplots()
     ax.plot(r, M_star_med, 'c-.', label='Stars')
@@ -148,7 +158,7 @@ def mass_plot(outfile, burn_fraction=0.5,
     ax.set_xlim(np.min(r), np.max(r))
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_xlabel('Radius [kpc]')
+    ax.set_xlabel('Radius  [arcsec]')
     ax.set_ylabel(r'Enclosed mass [M$_\odot$]')
     ax.legend(loc='best')
 

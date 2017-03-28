@@ -8,7 +8,7 @@ from .utils import G
 
 def sigma_jeans(R, M, K, I, nu,
                 interp_points=10, cutoff_factor=100, return_interp=False):
-    """Velocity dispersion in the sphereically symmetric Jeans model.  For an array
+    """Velocity dispersion in the spherically symmetric Jeans model.  For an array
     of input radii, the returned profile is calculated from an interpolated grid
     of a given size, distributed logrithmically across the radial range.
 
