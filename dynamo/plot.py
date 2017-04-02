@@ -123,7 +123,7 @@ def mass_plot(outfile, burn_fraction=0.5, rmin=0.1,
     samples = chain[:, keep:, :].reshape((-1, ndim))
 
     if "dist" in model.params.names:
-        i = np.arange(ndim)[model.params.names == "dist"][0]
+        i = np.arange(ndim)[np.array(model.params.names) == "dist"][0]
         if model.params[i].transform is None:
             dist = samples[:, i]
         else:
