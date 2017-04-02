@@ -154,3 +154,11 @@ def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
 
 def M_gNFW_dm_variable_ML(R, M200, gamma, I0_s, Re_s, n_s, dist, **kwargs):
     return M_gNFW_dm(R, M200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+
+def M_power(R, rho0, gamma_tot, dist, r0=1, **kwargs):
+    """Power law density profile, rho = rho0 (r / r0) ^ -gamma_tot
+    r0 is fixed to 1 kpc
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = R * kpc_per_arcsec
+    return 4 * np.pi * rho0 * r0 ** 3 / (3 - gamma_tot) * (r / r0) ** (3 - gamma_tot)
