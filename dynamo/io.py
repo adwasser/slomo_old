@@ -58,7 +58,8 @@ def read_yaml(filename):
         if isinstance(param['lnprior'], str):
             name, *args = map(str.strip, param['lnprior'].split(','))
             args = list(map(float, args))
-            param['lnprior'] = {'name': name, 'args': args}
+            lnprior_function = get_function(pdf, name)
+            param['lnprior'] = lambda x: lnprior_function(x, *args)
         param_list[i] = Parameter(**param)
     config['params'] = ParameterList(param_list)
 

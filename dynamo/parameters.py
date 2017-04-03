@@ -15,8 +15,7 @@ class Parameter:
         """
         self.name = name
         self._value = value
-        lnprior_function = get_function(pdf, lnprior['name'])
-        self._lnprior = lambda x: lnprior_function(x, *lnprior['args'])
+        self._lnprior = lnprior
         if transform is not None:
             self.transform = get_function(transforms, transform)
         else:
@@ -60,6 +59,9 @@ class ParameterList:
     def __repr__(self):
         return "<{}: {} params>".format(self.__class__.__name__, len(self))
 
+    def append(self, param):
+        self._params.append(param)
+        
     @property
     def names(self):
         return [p.name for p in self._params]

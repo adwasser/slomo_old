@@ -5,11 +5,12 @@ import numpy as np
 from . import (mass, anisotropy, surface_density, volume_density,
                pdf, jeans)
 from .utils import get_function, radians_per_arcsec
-from .parameters import ParameterList
+from .parameters import ParameterList, Parameter
 
 
 class DynamicalModel:
-    def __init__(self, params, constants, tracers, mass_model, measurements, **settings):
+    def __init__(self, params, constants, tracers, mass_model, measurements,
+                 weight_max=10, **settings):
         """Complete description of the dynamical model, including measurement model, data, and priors.
 
         Parameters
@@ -26,6 +27,12 @@ class DynamicalModel:
         self.tracers = tracers
         self.mass_model = mass_model
         self.measurements = measurements
+        # add weight parameters
+        for mm in self.measurements:
+            if mm.weight is not None:
+                lnprior = lambda x: pdf.lnexp_truncated(x, 1, weight_max)
+                weight_param = Parameter(mm.weight, 1, lnprior)
+                self.params.append(weight_param)
         self._settings = settings
         
     def __repr__(self):
@@ -51,7 +58,11 @@ class DynamicalModel:
         lnlike = 0
         for ll in self.measurements:
             try:
-                lnlike += ll(kwargs)
+                weight = kwargs[ll.weight]
+            except KeyError:
+                weight = 1
+            try:
+                lnlike += weight * ll(kwargs)
             except FloatingPointError as e:
                 print(ll)
                 print(e, "for params", param_values)
@@ -100,7 +111,7 @@ class Tracer:
 
 class Measurement:
 
-    def __init__(self, likelihood, model, observables):
+    def __init__(self, likelihood, model, observables, weight=None):
         """Likelihood function with data.
 
         Parameters
@@ -113,7 +124,7 @@ class Measurement:
         self.model = model
         self.radii = observables.pop('R')
         self.observables = observables
-        
+        self.weight = weight
 
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.likelihood.__name__)
