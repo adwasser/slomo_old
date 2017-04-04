@@ -17,7 +17,10 @@ label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
              "beta_b": r"$\beta_b$", "beta_r": r"$\beta_r$", "dist": r"$D$",
              "phi_b": r"$\phi_b$", "alpha_s": r"$\alpha_*$",
              "I0_s": r"$\Sigma_{0, *}$", "Re_s": r"$R_{\mathrm{eff}, *}$",
-             "n_s": r"$n_*$", "r_a": r"$r_a$", "M200": r"M$_{200}$"}
+             "n_s": r"$n_*$", "r_a": r"$r_a$", "M200": r"M$_{200}$",
+             "alpha_stars": r"$\alpha_*$", "alpha_gc": r"$\alpha_\mathrm{gc}$",
+             "alpha_mass": r"$\alpha_m$", "alpha_ms": r"$\alpha_\mathrm{ms}$",
+             "alpha_ls": r"$\alpha_\mathrm{ls}$"}
 
 def plotstyle():
     mpl.rc("figure", figsize=(12, 8))
@@ -37,7 +40,12 @@ def walker_plot(outfile, skip_step=100):
     
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
-    labels = [label_map[name] for name in model.params.names]
+    labels = []
+    for i, name in enumerate(model.params.names):
+        if name in label_map:
+            labels.append(label_map[name])
+        else:
+            labels.append(name)
     
     # take every n-th iteration
     n = skip_step
@@ -63,11 +71,16 @@ def autocorr_plot(outfile, skip_step=100, **kwargs):
     model = io.read_model(outfile)    
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
-    labels = [label_map[name] for name in model.params.names]
+    labels = []
+    for i, name in enumerate(model.params.names):
+        if name in label_map:
+            labels.append(label_map[name])
+        else:
+            labels.append(name)
+    # lower integrated autocorrelation times are better
     flatchain = chain.reshape((-1, ndim))
     nsamples = flatchain.shape[0]    
     acorr = autocorr_function(flatchain)
-    # lower integrated autocorrelation times are better
     try:
         acorr_times = integrated_time(flatchain, **kwargs)
     except:
@@ -98,7 +111,12 @@ def corner_plot(outfile, burn_fraction=0.5, **kwargs):
     model = io.read_model(outfile)    
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
-    labels = [label_map[name] for name in model.params.names]
+    labels = []
+    for i, name in enumerate(model.params.names):
+        if name in label_map:
+            labels.append(label_map[name])
+        else:
+            labels.append(name)
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
     kwargs.update({'labels': labels, 'quantiles': [.16, .5, .84],

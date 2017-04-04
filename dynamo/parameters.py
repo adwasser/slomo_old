@@ -1,8 +1,5 @@
 import numpy as np
 
-from . import (pdf, transforms)
-from .utils import get_function, get_params
-
 class Parameter:
 
     def __init__(self, name, value, lnprior, lnprior_args=[], transform=None):
@@ -11,14 +8,14 @@ class Parameter:
         name : str, name of parameter
         value : float, numeric value, if free param then it is the initial value
         lnprior : function x -> log prior probability of x
-        transform : name of function for transforming 
+        transform : function x -> transformed parameter
         """
         self.name = name
         self._value = value
         self._lnprior = lnprior
         self._lnprior_args = lnprior_args
         if transform is not None:
-            self.transform = get_function(transforms, transform)
+            self.transform = transform
         else:
             self.transform = lambda x: x
 

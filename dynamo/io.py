@@ -18,7 +18,7 @@ except ImportError as e:
 from .models import (Tracer, Measurement, DynamicalModel)
 from .utils import get_function
 from .parameters import (Parameter, ParameterList)
-from . import (pdf, likelihood,
+from . import (pdf, likelihood, transforms,
                mass, anisotropy,
                surface_density, volume_density)
 from . import __version__, __path__
@@ -60,6 +60,13 @@ def read_yaml(filename):
             args = list(map(float, args))
             param['lnprior'] = get_function(pdf, name)
             param['lnprior_args'] = args
+        # convert any transform string to a function
+        try:
+            transform_string = param['transform']
+            param['transform'] = get_function(transforms, transform_string)
+        except KeyError:
+            pass
+        # living dangerously... writing to list being iterated over :(
         param_list[i] = Parameter(**param)
     config['params'] = ParameterList(param_list)
 

@@ -1,6 +1,7 @@
 """Miscellanea"""
 
 import inspect
+from collections import OrderedDict
 
 import numpy as np
 from astropy import constants as c
@@ -23,3 +24,4 @@ def get_params(function):
     signature = inspect.signature(function)
     parameters = [param for param in signature.parameters]
     return parameters
+

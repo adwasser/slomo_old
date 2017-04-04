@@ -4,7 +4,7 @@ import numpy as np
 
 from . import (mass, anisotropy, surface_density, volume_density,
                pdf, jeans)
-from .utils import get_function, radians_per_arcsec
+from .utils import radians_per_arcsec
 from .parameters import ParameterList, Parameter
 
 class DynamicalModel:
@@ -110,15 +110,17 @@ class Tracer:
 
 class Measurement:
 
-    def __init__(self, likelihood, model, observables, weight=None):
+    def __init__(self, name, likelihood, model, observables, weight=None):
         """Likelihood function with data.
 
         Parameters
         ----------
+        name : str, name of dataset
         likelihood : (sigma_jeans, *data, **kwargs) -> L(sigma_jeans, *data, *kwargs)
-        model : list of f(R, **kwargs) -> observable
+        model : list of [f(R, **kwargs) -> observable]
         observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc] | I
         """
+        self.name = name
         self.likelihood = likelihood
         self.model = model
         self.radii = observables.pop('R')
@@ -126,7 +128,7 @@ class Measurement:
         self.weight = weight
 
     def __repr__(self):
-        return "<{}: {}>".format(self.__class__.__name__, self.likelihood.__name__)
+        return "<{}: {}>".format(self.__class__.__name__, self.name)
 
     def __call__(self, kwargs):
         """Returns the log likelihood for these observables.
