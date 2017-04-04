@@ -7,7 +7,6 @@ from . import (mass, anisotropy, surface_density, volume_density,
 from .utils import get_function, radians_per_arcsec
 from .parameters import ParameterList, Parameter
 
-
 class DynamicalModel:
     def __init__(self, params, constants, tracers, mass_model, measurements,
                  weight_max=10, **settings):
@@ -28,10 +27,10 @@ class DynamicalModel:
         self.mass_model = mass_model
         self.measurements = measurements
         # add weight parameters
+        lnprior_weight = lambda x: pdf.lnexp_truncated(x, 1, weight_max)
         for mm in self.measurements:
             if mm.weight is not None:
-                lnprior = lambda x: pdf.lnexp_truncated(x, 1, weight_max)
-                weight_param = Parameter(mm.weight, 1, lnprior)
+                weight_param = Parameter(mm.weight, 1, lnprior_weight)
                 self.params.append(weight_param)
         self._settings = settings
         

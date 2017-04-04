@@ -5,17 +5,18 @@ from .utils import get_function, get_params
 
 class Parameter:
 
-    def __init__(self, name, value, lnprior, transform=None):
+    def __init__(self, name, value, lnprior, lnprior_args=[], transform=None):
         """Model parameter object
 
         name : str, name of parameter
         value : float, numeric value, if free param then it is the initial value
-        lnprior : dict with keys (name, args)
+        lnprior : function x -> log prior probability of x
         transform : name of function for transforming 
         """
         self.name = name
         self._value = value
         self._lnprior = lnprior
+        self._lnprior_args = lnprior_args
         if transform is not None:
             self.transform = get_function(transforms, transform)
         else:
@@ -34,7 +35,7 @@ class Parameter:
 
     @property
     def lnprior(self, value):
-        return self._lnprior(self._value)
+        return self._lnprior(self._value, *self._lnprior_args)
 
     
 class ParameterList:
@@ -85,7 +86,7 @@ class ParameterList:
         assert len(values) == len(self)
         lp = 0
         for p, v in zip(self._params, values):
-            lp += p._lnprior(v)
+            lp += p._lnprior(v, *p._lnprior_args)
         return lp
 
     def mapping(self, values):
