@@ -5,7 +5,7 @@ import numpy as np
 from . import (mass, anisotropy, surface_density, volume_density,
                pdf, jeans)
 from .utils import radians_per_arcsec
-from .parameters import ParameterList, Parameter
+from .parameters import Parameter, ParamDict
 
 class DynamicalModel:
     def __init__(self, params, constants, tracers, mass_model, measurements,
@@ -14,11 +14,11 @@ class DynamicalModel:
 
         Parameters
         ----------
-        params : Parameter list object, as instantiated from config file
+        params : ParamDict object, as instantiated from config file
         constants : dictionary mapping variable names to fixed values
-        tracers : list of Tracer objects
+        tracers : OrderedDict of Tracer objects
         mass_model : enclosed mass function
-        measurements : list of Measurement objects
+        measurements : OrderedDict of Measurement objects
         settings : other keyword arguments to store for posterity
         """
         self.params = params
@@ -28,9 +28,9 @@ class DynamicalModel:
         self.measurements = measurements
         # add weight parameters
         lnprior_weight = lambda x: pdf.lnexp_truncated(x, 1, weight_max)
-        for mm in self.measurements:
-            if mm.weight is not None:
-                weight_param = Parameter(mm.weight, 1, lnprior_weight)
+        for mm in self.measurements.values():
+            if mm.weight:
+                weight_param = Parameter("alpha_" + mm.name, 1, lnprior_weight)
                 self.params.append(weight_param)
         self._settings = settings
         
@@ -41,7 +41,6 @@ class DynamicalModel:
 
     def construct_kwargs(self, param_values):
         return {**self.constants, **self.params.mapping(param_values)}
-
 
     def __call__(self, param_values):
         """Log of the posterior probability"""
@@ -55,15 +54,16 @@ class DynamicalModel:
 
         # log of the likelihood
         lnlike = 0
-        for ll in self.measurements:
+        for mm in self.measurements.values():
             try:
-                weight = kwargs[ll.weight]
+                weight = kwargs[mm.weight]
             except KeyError:
                 weight = 1
             try:
-                lnlike += weight * ll(kwargs)
+                ll = mm(kwargs)
+                lnlike += weight * mm(kwargs)
             except FloatingPointError as e:
-                print(ll)
+                print(mm)
                 print(e, "for params", param_values)
                 return -np.inf
         return lnprior + lnlike
@@ -110,7 +110,7 @@ class Tracer:
 
 class Measurement:
 
-    def __init__(self, name, likelihood, model, observables, weight=None):
+    def __init__(self, name, likelihood, model, observables, weight=False):
         """Likelihood function with data.
 
         Parameters
@@ -119,6 +119,7 @@ class Measurement:
         likelihood : (sigma_jeans, *data, **kwargs) -> L(sigma_jeans, *data, *kwargs)
         model : list of [f(R, **kwargs) -> observable]
         observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc] | I
+        weight : if True, associate with a weight parameter for the joint likelihood
         """
         self.name = name
         self.likelihood = likelihood

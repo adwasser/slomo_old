@@ -3,7 +3,7 @@
 import os
 import subprocess
 import inspect
-from collections import deque
+from collections import deque, OrderedDict
 import warnings
 
 import numpy as np
@@ -17,7 +17,7 @@ except ImportError as e:
     
 from .models import (Tracer, Measurement, DynamicalModel)
 from .utils import get_function
-from .parameters import (Parameter, ParameterList)
+from .parameters import (Parameter, ParamDict)
 from . import (pdf, likelihood, transforms,
                mass, anisotropy,
                surface_density, volume_density)
@@ -68,7 +68,7 @@ def read_yaml(filename):
             pass
         # living dangerously... writing to list being iterated over :(
         param_list[i] = Parameter(**param)
-    config['params'] = ParameterList(param_list)
+    config['params'] = ParamDict(param_list)
 
     # load mass
     mass_model = get_function(mass, config['mass_model'])
@@ -83,10 +83,11 @@ def read_yaml(filename):
             tracer[key] = get_function(tracer_modules[key], tracer[key])
         tracer['mass_model'] = mass_model
         config['tracers'][i] = Tracer(**tracer)
+    config['tracers'] = OrderedDict([(tt.name, tt) for tt in config['tracers']])
 
     # load likelihoods
     measurement_list = config['measurements']
-    tracer_dict = {tracer.name: tracer for tracer in config['tracers']}
+    tracer_dict = {tracer.name: tracer for tracer in config['tracers'].values()}
     for i, measurement in enumerate(measurement_list):
         measurement['likelihood'] = get_function(likelihood, measurement['likelihood'])
         # replace single tracer with list
@@ -94,8 +95,8 @@ def read_yaml(filename):
             measurement['model'] = [measurement['model']]
         models = []
         for model in measurement['model']:
-            if model in tracer_dict.keys():
-                model_function = tracer_dict[model]
+            if model in config['tracers']:
+                model_function = config['tracers'][model]
             else:
                 for module in tracer_modules.values():
                     try:
@@ -111,6 +112,7 @@ def read_yaml(filename):
             data = np.genfromtxt(measurement['observables'], names=True).view(np.recarray)
             measurement['observables'] = {name: data[name] for name in data.dtype.names}
         config['measurements'][i] = Measurement(**measurement)
+    config['measurements'] = OrderedDict([(mm.name, mm) for mm in config['measurements']])
     return config
 
 

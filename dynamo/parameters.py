@@ -1,4 +1,4 @@
-import numpy as np
+from collections import OrderedDict
 
 class Parameter:
 
@@ -7,10 +7,12 @@ class Parameter:
 
         name : str, name of parameter
         value : float, numeric value, if free param then it is the initial value
-        lnprior : function x -> log prior probability of x
+        lnprior : function x, *args -> log prior probability of x
+        lnprior_args : list of arguments for log prior probability function
         transform : function x -> transformed parameter
         """
         self.name = name
+        # parameter value as seen by sampler
         self._value = value
         self._lnprior = lnprior
         self._lnprior_args = lnprior_args
@@ -24,69 +26,52 @@ class Parameter:
     
     @property
     def value(self):
+        # parameter value as seen by dynamical model
         return self.transform(self._value)
 
     @value.setter
     def value(self, x):
         self._value = x
 
-    @property
     def lnprior(self, value):
         return self._lnprior(self._value, *self._lnprior_args)
 
     
-class ParameterList:
+class ParamDict(OrderedDict):
 
     def __init__(self, params):
         """A list of Parameter objects"""
         if isinstance(params[0], dict):
-            self._params = [Parameter(**p) for p in params]
-        else:
-            assert all([isinstance(p, Parameter) for p in params])
-            self._params = params
-
-    def __len__(self):
-        return len(self._params)
-
-    def __getitem__(self, key):
-        return self._params[key]
-
-    def __setitem__(self, key, value):
-        self._params[key] = value
-        
+            params = [Parameter(**p) for p in params]
+        assert all([isinstance(p, Parameter) for p in params])
+        super().__init__([(p.name, p) for p in params])
+                    
     def __repr__(self):
         return "<{}: {} params>".format(self.__class__.__name__, len(self))
 
     def append(self, param):
-        self._params.append(param)
+        assert isinstance(param, Parameter)
+        self[param.name] = param
         
     @property
     def names(self):
-        return [p.name for p in self._params]
-
-    @property
-    def values(self):
-        return [p.value for p in self._params]
+        return list(self.keys())
 
     @property
     def _values(self):
-        return [p._value for p in self._params]
-    
-    @values.setter
-    def values(self, values):
-        assert len(values) == len(self)
-        for i, p in enumerate(self._params):
-            p.value = values[i]
-        
+        return [p._value for p in self.values()]
+            
     def lnprior(self, values):
         # pre-transformed values
         assert len(values) == len(self)
         lp = 0
-        for p, v in zip(self._params, values):
-            lp += p._lnprior(v, *p._lnprior_args)
+        for value, param in zip(values, self.values()):
+            lp += param.lnprior(value)
         return lp
 
     def mapping(self, values):
-        # pre-transformed values
+        """Construct a dictionary from parameter name to assigned values.
+        If the parameter has a transformation from the sampled parameter to the
+        physical parameter, that is performed for the output."""
         assert len(values) == len(self)
-        return {p.name: p.transform(v) for p, v in zip(self._params, values)}
+        return {p.name: p.transform(v) for v, p in zip(values, self.values())}

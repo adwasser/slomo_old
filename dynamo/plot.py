@@ -20,7 +20,8 @@ label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
              "n_s": r"$n_*$", "r_a": r"$r_a$", "M200": r"M$_{200}$",
              "alpha_stars": r"$\alpha_*$", "alpha_gc": r"$\alpha_\mathrm{gc}$",
              "alpha_mass": r"$\alpha_m$", "alpha_ms": r"$\alpha_\mathrm{ms}$",
-             "alpha_ls": r"$\alpha_\mathrm{ls}$"}
+             "alpha_ls": r"$\alpha_\mathrm{ls}$",
+             "alpha_sps": r"$\alpha_\mathrm{sps}$"}
 
 def plotstyle():
     mpl.rc("figure", figsize=(12, 8))
