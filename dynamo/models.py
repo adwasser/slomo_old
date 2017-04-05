@@ -56,12 +56,7 @@ class DynamicalModel:
         lnlike = 0
         for mm in self.measurements.values():
             try:
-                weight = kwargs[mm.weight]
-            except KeyError:
-                weight = 1
-            try:
-                ll = mm(kwargs)
-                lnlike += weight * mm(kwargs)
+                lnlike += mm(kwargs)
             except FloatingPointError as e:
                 print(mm)
                 print(e, "for params", param_values)
@@ -142,20 +137,36 @@ class Measurement:
         -------
         ll : log likelihood, in (-inf, 0)
         """
-        if self.likelihood.__name__ in ['lnlike_continuous', 'lnlike_discrete']:
+        try:
+            weight = np.sqrt(kwargs["alpha_" + self.name])
+        except KeyError:
+            weight = 1
+        if self.likelihood.__name__ == "lnlike_continuous":
             sigma_jeans = self.model[0](self.radii, kwargs)
-            return self.likelihood(sigma_jeans, **self.observables)
-        elif self.likelihood.__name__ == "lnlike_density":
-            I_model = self.model[0](self.radii, **kwargs)
-            return self.likelihood(I_model, **self.observables)
-        else:
-            assert self.likelihood.__name__ == 'lnlike_gmm', self.likelihood.__name__ + " is not available."
+            sigma = self.observables['sigma']
+            dsigma = self.observables['dsigma'] / weight
+            return self.likelihood(sigma_jeans, sigma, dsigma)
+        elif self.likelihood.__name__ == "lnlike_discrete":
+            sigma_jeans = self.model[0](self.radii, kwargs)
+            v = self.observables['v']
+            dv = self.observables['dv'] / weight
+            return self.likelihood(sigma_jeans, v, dv)
+        elif self.likelihood.__name__ == "lnlike_gmm":
             # TODO, find a smarter way of dealing with GMM likelihood
             sigma_b = self.model[0](self.radii, kwargs)
             sigma_r = self.model[1](self.radii, kwargs)
-            return self.likelihood(sigma_b, sigma_r, **self.observables, **kwargs)
-
-        
+            v = self.observables['v']
+            dv = self.observables['dv'] / weight
+            c = self.observables['c']
+            dc = self.observables['dc'] / weight
+            return self.likelihood(sigma_b, sigma_r, v, dv, c, dc, **kwargs)
+        elif self.likelihood.__name__ == "lnlike_density":
+            I_model = self.model[0](self.radii, **kwargs)
+            I = self.observables['I']
+            dI = self.observables['dI'] / weight
+            return self.likelihood(I_model, I, dI)
+        else:
+            raise ValueError(self.likelihood.__name__ + " not found!")
         
         
 

@@ -110,7 +110,7 @@ def read_yaml(filename):
         measurement['model'] = models
         if isinstance(measurement['observables'], str):
             data = np.genfromtxt(measurement['observables'], names=True).view(np.recarray)
-            measurement['observables'] = {name: data[name] for name in data.dtype.names}
+            measurement['observables'] = OrderedDict([(name, data[name]) for name in data.dtype.names])
         config['measurements'][i] = Measurement(**measurement)
     config['measurements'] = OrderedDict([(mm.name, mm) for mm in config['measurements']])
     return config

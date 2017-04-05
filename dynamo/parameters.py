@@ -40,14 +40,11 @@ class Parameter:
 class ParamDict(OrderedDict):
 
     def __init__(self, params):
-        """A list of Parameter objects"""
+        """An ordered dictionary of Parameter objects"""
         if isinstance(params[0], dict):
             params = [Parameter(**p) for p in params]
         assert all([isinstance(p, Parameter) for p in params])
         super().__init__([(p.name, p) for p in params])
-                    
-    def __repr__(self):
-        return "<{}: {} params>".format(self.__class__.__name__, len(self))
 
     def append(self, param):
         assert isinstance(param, Parameter)
