@@ -141,12 +141,12 @@ def mass_plot(outfile, burn_fraction=0.5, rmin=0.1,
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
 
-    if "dist" in model.params.names:
-        i = np.arange(ndim)[np.array(model.params.names) == "dist"][0]
-        if model.params[i].transform is None:
+    if "dist" in model.params:
+        i = list(model.params).index("dist")
+        if model.params["dist"].transform is None:
             dist = samples[:, i]
         else:
-            dist = model.params[i].transform(samples[:, i])
+            dist = model.params["dist"].transform(samples[:, i])
     else:
         dist = model.constants["dist"]
     kpc_per_arcsec = np.median(dist * radians_per_arcsec)
