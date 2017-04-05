@@ -68,7 +68,7 @@ def read_yaml(filename):
             pass
         # living dangerously... writing to list being iterated over :(
         param_list[i] = Parameter(**param)
-    config['params'] = ParamDict(param_list)
+    config['params'] = ParamDict([(p.name, p) for p in param_list])
 
     # load mass
     mass_model = get_function(mass, config['mass_model'])

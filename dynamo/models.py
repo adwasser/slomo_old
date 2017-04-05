@@ -31,7 +31,7 @@ class DynamicalModel:
         for mm in self.measurements.values():
             if mm.weight:
                 weight_param = Parameter("alpha_" + mm.name, 1, lnprior_weight)
-                self.params.append(weight_param)
+                self.params[weight_param.name] = weight_param
         self._settings = settings
         
     def __repr__(self):

@@ -38,18 +38,10 @@ class Parameter:
 
     
 class ParamDict(OrderedDict):
-
-    def __init__(self, params):
-        """An ordered dictionary of Parameter objects"""
-        if isinstance(params[0], dict):
-            params = [Parameter(**p) for p in params]
-        assert all([isinstance(p, Parameter) for p in params])
-        super().__init__([(p.name, p) for p in params])
-
-    def append(self, param):
-        assert isinstance(param, Parameter)
-        self[param.name] = param
-        
+    """OrderedDict of Parameter objects
+    TODO: enforce all entries being Parameter objects at init and setitem.
+    """
+    
     @property
     def names(self):
         return list(self.keys())
