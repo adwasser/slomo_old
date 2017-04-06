@@ -34,7 +34,7 @@ class Parameter:
         self._value = x
 
     def lnprior(self, value):
-        return self._lnprior(self._value, *self._lnprior_args)
+        return self._lnprior(value, *self._lnprior_args)
 
     
 class ParamDict(OrderedDict):
@@ -49,7 +49,7 @@ class ParamDict(OrderedDict):
     @property
     def _values(self):
         return [p._value for p in self.values()]
-            
+
     def lnprior(self, values):
         # pre-transformed values
         assert len(values) == len(self)
