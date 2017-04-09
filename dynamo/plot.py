@@ -23,16 +23,16 @@ label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
              "alpha_ls": r"$\alpha_\mathrm{ls}$",
              "alpha_sps": r"$\alpha_\mathrm{sps}$"}
 
-def plotstyle():
-    mpl.rc("figure", figsize=(12, 8))
-    mpl.rc("font", size=12, family="serif")
-    mpl.rc("xtick", direction="in")
-    mpl.rc("ytick", direction="in")
-    mpl.rc("errorbar", capsize=3)
-    mpl.rc("savefig", bbox="tight")
-    mpl.rc("axes.formatter", limits=(-3, 3))
-    mpl.rc("hist", bins="auto")
-plotstyle()
+# def plotstyle():
+#     mpl.rc("figure", figsize=(12, 8))
+#     mpl.rc("font", size=12, family="serif")
+#     mpl.rc("xtick", direction="in")
+#     mpl.rc("ytick", direction="in")
+#     mpl.rc("errorbar", capsize=3)
+#     mpl.rc("savefig", bbox="tight")
+#     mpl.rc("axes.formatter", limits=(-3, 3))
+#     mpl.rc("hist", bins="auto")
+# # plotstyle()
 
 def walker_plot(outfile, skip_step=100):
     """Does the walker choose the path or does the path choose the walker?"""
