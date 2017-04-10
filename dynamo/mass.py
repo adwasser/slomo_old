@@ -175,3 +175,8 @@ def M_gNFW200_variable_ML(R, M200, c200, gamma, I0_s, Re_s, n_s, dist, **kwargs)
     """
     return M_gNFW200(R, M200, c200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
 
+def M_gNFW_variable_ML_bh(R, M_bh, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
+    return M_bh + M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs)
+
+def M_gNFW_constant_ML_bh(R, M_bh, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+    return M_bh + M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs)
