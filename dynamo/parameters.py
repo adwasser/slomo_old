@@ -64,3 +64,7 @@ class ParamDict(OrderedDict):
         physical parameter, that is performed for the output."""
         assert len(values) == len(self)
         return {p.name: p.transform(v) for v, p in zip(values, self.values())}
+
+    def index(self, name):
+        """Get the index (unique if exists) for the given name."""
+        return list(self.keys()).index(name)
