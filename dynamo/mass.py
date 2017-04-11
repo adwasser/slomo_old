@@ -1,5 +1,6 @@
 """Mass profiles"""
 
+from collections import OrderedDict
 import numpy as np
 from scipy import special
 from scipy import optimize
@@ -19,6 +20,7 @@ def _r200(mass_function, mass_params,
     rv = optimize.brentq(f, rlow, rhigh, disp=True)
     return rv
 
+
 def _gNFW_to_NFW(rho_s, r_s, gamma):
     """(rho_s, r_s, gamma) -> (M200, c200)"""
     h = 0.678 # Planck 2015
@@ -34,6 +36,10 @@ def d_n(n):
     """Einasto coefficient, as described by Retana-Montenegro+2012."""
     return (3 * n - 1 / 3. + 8 / (1215 * n) + 184 / (229635 * n**2) + 1048
             / (31000725 * n**3) - 17557576 / (1242974068875 / n**4)) # + O(n^5)
+
+
+def heaviside_bh(M_bh, **kwargs):
+    return M_bh
 
 
 def L_sersic(r, I0, Re, n, dist):
@@ -55,23 +61,6 @@ def L_sersic(r, I0, Re, n, dist):
 
 def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
     return L_sersic(r, I0_s, Re_s, n_s, dist)
-
-
-def M_NFW(r, M200, dist, **kwargs):
-    """NFW halo with mass-concentration relation from Mandelbaum+2008."""
-    # distance conversion
-    kpc_per_arcsec = dist * radians_per_arcsec
-    r = r * kpc_per_arcsec
-    h = 0.678
-    rho_crit = 277.46 * h ** 2
-    c0 = 4.6
-    beta = 0.13
-    M0 = h * 1e14
-    # Mandelbaum+2008 relation
-    c200 = c0 * (M200 / M0) ** beta
-    f = lambda x: np.log(1 + x) - x / (1 + x)
-    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit)) ** (1 / 3)
-    return M200 * f(r * c200 / r200) / f(c200)
 
 
 def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
@@ -129,6 +118,15 @@ def M_sersic(r, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     return upsilon * L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
+def M_power(R, rho0, gamma_tot, dist, r0=1, **kwargs):
+    """Power law density profile, rho = rho0 (r / r0) ^ -gamma_tot
+    r0 is fixed to 1 kpc
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = R * kpc_per_arcsec
+    return 4 * np.pi * rho0 * r0 ** 3 / (3 - gamma_tot) * (r / r0) ** (3 - gamma_tot)
+
+
 def M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     """gNFW halo with contant M/L and Sersic luminosity profile
     R is in arcsec, converted to kpc with dist (in kpc)
@@ -152,14 +150,6 @@ def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
 
 def M_gNFW_dm_variable_ML(R, M200, gamma, I0_s, Re_s, n_s, dist, **kwargs):
     return M_gNFW_dm(R, M200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
-
-def M_power(R, rho0, gamma_tot, dist, r0=1, **kwargs):
-    """Power law density profile, rho = rho0 (r / r0) ^ -gamma_tot
-    r0 is fixed to 1 kpc
-    """
-    kpc_per_arcsec = dist * radians_per_arcsec
-    r = R * kpc_per_arcsec
-    return 4 * np.pi * rho0 * r0 ** 3 / (3 - gamma_tot) * (r / r0) ** (3 - gamma_tot)
 
 def M_gNFW200_constant_ML(R, M200, c200, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     """gNFW halo with contant M/L and Sersic luminosity profile

@@ -15,7 +15,7 @@ try:
 except ImportError as e:
     import yaml
     
-from .models import (Tracer, Measurement, DynamicalModel)
+from .models import (Tracer, Measurement, DynamicalModel, MassModel)
 from .utils import get_function
 from .parameters import (Parameter, ParamDict)
 from . import (pdf, likelihood, transforms,
@@ -71,8 +71,13 @@ def read_yaml(filename):
     config['params'] = ParamDict([(p.name, p) for p in param_list])
 
     # load mass
-    mass_model = get_function(mass, config['mass_model'])
-    config['mass_model'] = mass_model
+    if isinstance(config['mass_model'], list):
+        names, functions = zip(*[list(d.items())[0] for d in config['mass_model']])
+    else:
+        names, functions = zip(*config['mass_model'].items())
+    masses = list(map(lambda f: get_function(mass, f), functions))
+    mass_model = MassModel(zip(names, masses))
+    config['mass_model'] = mass_model    
 
     # load tracers
     tracer_list = config['tracers']

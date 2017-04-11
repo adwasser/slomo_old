@@ -1,5 +1,7 @@
 """Model classes"""
 
+from collections import OrderedDict
+
 import numpy as np
 
 from . import (mass, anisotropy, surface_density, volume_density,
@@ -17,7 +19,7 @@ class DynamicalModel:
         params : ParamDict object, as instantiated from config file
         constants : dictionary mapping variable names to fixed values
         tracers : OrderedDict of Tracer objects
-        mass_model : enclosed mass function
+        mass_model : MassModel instance, function for enclosed mass
         measurements : OrderedDict of Measurement objects
         settings : other keyword arguments to store for posterity
         """
@@ -35,9 +37,10 @@ class DynamicalModel:
         self._settings = settings
         
     def __repr__(self):
-        return "<{}: {}, {:d} tracers>".format(self.__class__.__name__,
-                                               self.mass_model.__name__,
-                                               len(self.tracers))
+        fmt_str = "<{}: {:d} mass components, {:d} tracers>" 
+        return fmt_str.format(self.__class__.__name__,
+                              len(self.mass_model),
+                              len(self.tracers))
 
     def construct_kwargs(self, param_values):
         return {**self.constants, **self.params.mapping(param_values)}
@@ -62,6 +65,12 @@ class DynamicalModel:
                 print(e, "for params", param_values)
                 return -np.inf
         return lnprior + lnlike
+
+    
+class MassModel(OrderedDict):
+    """Multi-component mass model, names index functions"""
+    def __call__(self, radii, **kwargs):
+        return sum([M(radii, **kwargs) for M in self.values()])
 
     
 class Tracer:
