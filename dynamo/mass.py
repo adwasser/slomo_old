@@ -38,7 +38,7 @@ def d_n(n):
             / (31000725 * n**3) - 17557576 / (1242974068875 / n**4)) # + O(n^5)
 
 
-def heaviside_bh(M_bh, **kwargs):
+def heaviside_bh(R, M_bh, **kwargs):
     return M_bh
 
 
