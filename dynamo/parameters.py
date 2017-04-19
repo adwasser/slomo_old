@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 class Parameter:
 
-    def __init__(self, name, value, lnprior, lnprior_args=[], transform=None):
+    def __init__(self, name, value, lnprior, lnprior_args=None, transform=None):
         """Model parameter object
 
         name : str, name of parameter
@@ -15,7 +15,10 @@ class Parameter:
         # parameter value as seen by sampler
         self._value = value
         self._lnprior = lnprior
-        self._lnprior_args = lnprior_args
+        if lnprior_args is None:
+            self._lnprior_args = ()
+        else:
+            self._lnprior_args = lnprior_args
         if transform is not None:
             self.transform = transform
         else:

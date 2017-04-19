@@ -15,6 +15,37 @@ from emcee import EnsembleSampler
 from . import io
 from .models import DynamicalModel
 
+def info(hdf5_file):
+    model = io.read_model(hdf5_file)
+    info_str = 50 * "=" + '\n'
+    info_str += "dynamo\n"
+    info_str += "version : {}\n".format(io._version_string())
+    info_str += 50 * "=" + '\n'
+    divide = 50 * "-" + '\n'
+    info_str += "\n" + divide + "Mass components\n" + divide
+    for component, function in model.mass_model.items():
+        info_str += "\t" + component + " : " + function.__name__ + "\n"
+    info_str += "\n" + divide + "Tracers\n" + divide
+    for name, tracer in model.tracers.items():
+        info_str += "\t" + name + " :\n"
+        info_str += "\t\tanisotropy : " + tracer.anisotropy.__name__ + "\n"
+        info_str += "\t\tsurface density : " + tracer.surface_density.__name__  + "\n"
+        info_str += "\t\tvolume density : " + tracer.volume_density.__name__ + "\n"
+    info_str += "\n" + divide + "Measurements\n" + divide
+    for name, mm in model.measurements.items():
+        info_str += "\t" + name + " : " + mm.likelihood.__name__ + "\n"
+    info_str += "\n" + divide + "Parameters\n" + divide
+    for name, param in model.params.items():
+        info_str += "\t" + name + " : lnprior: " + param._lnprior.__name__
+        info_str += "(x, {})\n".format(", ".join(map(str, param._lnprior_args)))
+    info_str += "\n" + divide + "Constants\n" + divide
+    for const, value in model.constants.items():
+        info_str += "\t" + const + " = " + str(value) + "\n"
+    info_str += "\n" + divide + "Settings\n" + divide
+    for key, value in model._settings.items():
+        info_str += "\t" + key + " : " + str(value) + "\n"
+    print(info_str)
+
 def init(yaml_file, clobber=False):
     config = io.read_yaml(yaml_file)
     model = DynamicalModel(**config)

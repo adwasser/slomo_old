@@ -2,29 +2,41 @@
 
 import os
 import argparse
-from dynamo.run import init, sample
 
-parser = argparse.ArgumentParser(description="Construct and run dynamical models.")
+from dynamo.io import _version_string
+from dynamo.run import info, init, sample, mock
+
+help_str = """
+--------------------------------------------------
+dynamo
+version : {}
+--------------------------------------------------
+Construct and run dynamical models.
+""".format(_version_string())
+
+parser = argparse.ArgumentParser(description=help_str,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--verbose', action='store_true', help='not implemented yet')
 
 subparsers = parser.add_subparsers(help='Available commands')
 
 # init command
-parser_init = subparsers.add_parser("init",
-                                    help="Construct a model")
+parser_init = subparsers.add_parser("init", help="Construct a model")
 parser_init.set_defaults(command="init")
-parser_init.add_argument("config",
-                         help="Config file in YAML format.  See docs for required entries.")
+parser_init.add_argument("config", help="Config file in YAML format.  See docs for required entries.")
 parser_init.add_argument("--clobber", action="store_true",
                          help="If selected, overwrite existing hdf5 output file.")
 
+# info command
+parser_info = subparsers.add_parser("info", help="Quick info on the model.")
+parser_info.set_defaults(command="info")
+parser_info.add_argument("hdf5", help="hdf5 output file")
+
 # sample command
-parser_sample = subparsers.add_parser("sample",
-                                      help="Sample from an existing model.")
+parser_sample = subparsers.add_parser("sample", help="Sample from an existing model.")
 parser_sample.set_defaults(command="sample")
 parser_sample.add_argument("hdf5", help="hdf5 output file")
-parser_sample.add_argument("niter", type=int,
-                           help="Number of iterations to run.")
+parser_sample.add_argument("niter", type=int, help="Number of iterations to run.")
 parser_sample.add_argument("--mock", action="store_true",
                            help="If selected, sample from mock data instead of stored data.")
 
@@ -34,12 +46,10 @@ parser_run = subparsers.add_parser("run",
 parser_run.set_defaults(command="run")
 parser_run.add_argument("config",
                         help="Config file in YAML format.  See docs for required entries.")
-parser_run.add_argument("niter", type=int,
-                        help="Number of iterations to run.")
+parser_run.add_argument("niter", type=int, help="Number of iterations to run.")
 
 # mock command
-parser_mock = subparsers.add_parser("mock",
-                                    help="Create mock data from specified model parameters.")
+parser_mock = subparsers.add_parser("mock", help="Create mock data from specified model parameters.")
 parser_mock.set_defaults(command="mock")
 parser_mock.add_argument("hdf5", help="hdf5 output file")
 
@@ -47,12 +57,16 @@ args = parser.parse_args()
 
 if args.command == "init":
     init(args.config, args.clobber)
+elif args.command == "info":
+    info(args.hdf5)
 elif args.command == "sample":
     sample(args.hdf5, args.niter)
 elif args.command == "run":
     init(args.config)
     outfile = args.config.split(".")[0] + ".hdf5"
     sample(outfile, args.niter)
+elif args.command == "mock":
+    mock(args.hdf5)
 else:
     raise NotImplementedError("Command " + args.command + " not implemented yet.")
 
