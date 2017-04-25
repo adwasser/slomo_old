@@ -1,8 +1,11 @@
 from collections import OrderedDict
 
+def identity(x):
+    return x
+
 class Parameter:
 
-    def __init__(self, name, value, lnprior, lnprior_args=None, transform=None):
+    def __init__(self, name, value, lnprior, lnprior_args=None, transform=identity):
         """Model parameter object
 
         name : str, name of parameter
@@ -19,10 +22,7 @@ class Parameter:
             self._lnprior_args = ()
         else:
             self._lnprior_args = lnprior_args
-        if transform is not None:
-            self.transform = transform
-        else:
-            self.transform = lambda x: x
+        self.transform = transform
 
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
