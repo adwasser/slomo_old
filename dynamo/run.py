@@ -5,6 +5,7 @@ import subprocess
 import inspect
 import time
 from collections import deque
+import functools
 
 import dill as pickle
 import multiprocess
@@ -15,11 +16,14 @@ from emcee import EnsembleSampler
 from . import io
 from .models import DynamicalModel
 
+printf = functools.partial(print, flush=True)
+
 def info(hdf5_file):
     model = io.read_model(hdf5_file)
     info_str = 50 * "=" + '\n'
     info_str += "dynamo\n"
     info_str += "version : {}\n".format(io._version_string())
+    info_str += "nwalkers : {}, niterations : {}, ndim : {}\n".format(*io.chain_shape(hdf5_file))
     info_str += 50 * "=" + '\n'
     divide = 50 * "-" + '\n'
     info_str += "\n" + divide + "Mass components\n" + divide
@@ -44,7 +48,7 @@ def info(hdf5_file):
     info_str += "\n" + divide + "Settings\n" + divide
     for key, value in model._settings.items():
         info_str += "\t" + key + " : " + str(value) + "\n"
-    print(info_str)
+    printf(info_str)
 
 def init(yaml_file, clobber=False):
     config = io.read_yaml(yaml_file)
@@ -95,7 +99,7 @@ def sample(hdf5_file, niter, threads=None, mock=False):
     count = 0
     start_time = time.time()
     for result in sampler.sample(positions, iterations=niter, storechain=False):
-        print('Iteration {:4d}: {:.4e} s'.format(count + 1, time.time() - start_time))
+        printf('Iteration {:4d}: {:.4e} s'.format(count + 1, time.time() - start_time))
         count += 1
         new_positions = result[0]
         io.append_to_chain(hdf5_file, new_positions)

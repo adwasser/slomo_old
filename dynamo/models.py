@@ -29,10 +29,10 @@ class DynamicalModel:
         self.mass_model = mass_model
         self.measurements = measurements
         # add weight parameters
-        lnprior_weight = lambda x: pdf.lnexp_truncated(x, 1, weight_max)
         for mm in self.measurements.values():
             if mm.weight:
-                weight_param = Parameter("alpha_" + mm.name, 1, lnprior_weight)
+                weight_param = Parameter("alpha_" + mm.name, value=1, lnprior=pdf.lnexp_truncated,
+                                         lnprior_args=(1, weight_max))
                 self.params[weight_param.name] = weight_param
         self._settings = settings
         
