@@ -34,6 +34,7 @@ def _version_string():
         result = subprocess.run(['git', 'rev-parse', 'HEAD'],
                                 check=True, stdout=subprocess.PIPE)
     except subprocess.CalledProcessError:
+        os.chdir(cwd)
         return __version__
     
     os.chdir(cwd)
