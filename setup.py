@@ -21,7 +21,8 @@ setup(name="dynamo",
       author_email="adwasser@ucsc.edu",
       license="MIT",
       packages=["dynamo"],
-      install_requires=["numpy", "scipy", "astropy", "emcee", "PyYAML"],
+      install_requires=["numpy", "scipy", "astropy", "emcee", "ruamel.yaml",
+                        "h5py", "dill", "multiprocess"],
       scripts=["bin/dynamo"])
       
 
