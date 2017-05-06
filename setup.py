@@ -23,6 +23,7 @@ setup(name="dynamo",
       packages=["dynamo"],
       install_requires=["numpy", "scipy", "astropy", "emcee", "ruamel.yaml",
                         "h5py", "dill", "multiprocess"],
+      include_package_data=True,
       scripts=["bin/dynamo"])
       
 
