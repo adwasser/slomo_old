@@ -40,6 +40,7 @@ parser_sample.add_argument("hdf5", help="hdf5 output file")
 parser_sample.add_argument("niter", type=int, help="Number of iterations to run.")
 parser_sample.add_argument("--mock", action="store_true",
                            help="If selected, sample from mock data instead of stored data.")
+parser_sample.add_argument("--threads", help="Number of threads to use.", default=None)
 
 # run command
 parser_run = subparsers.add_parser("run",
@@ -48,6 +49,7 @@ parser_run.set_defaults(command="run")
 parser_run.add_argument("config",
                         help="Config file in YAML format.  See docs for required entries.")
 parser_run.add_argument("niter", type=int, help="Number of iterations to run.")
+parser_run.add_argument("--threads", help="Number of threads to use.", default=None)
 
 # mock command
 parser_mock = subparsers.add_parser("mock", help="Create mock data from specified model parameters.")
@@ -67,11 +69,11 @@ if args.command == "init":
 elif args.command == "info":
     info(args.hdf5)
 elif args.command == "sample":
-    sample(args.hdf5, args.niter)
+    sample(args.hdf5, args.niter, threads=args.threads)
 elif args.command == "run":
     init(args.config)
     outfile = args.config.split(".")[0] + ".hdf5"
-    sample(outfile, args.niter)
+    sample(outfile, args.niter, threads=args.threads)
 elif args.command == "mock":
     mock(args.hdf5)
 else:
