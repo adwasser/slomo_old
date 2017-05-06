@@ -30,8 +30,12 @@ def _version_string():
     cwd = os.getcwd()
     topdir = os.path.join(__path__[0], "..")
     os.chdir(topdir)
-    result = subprocess.run(['git', 'rev-parse', 'HEAD'],
-                            check=True, stdout=subprocess.PIPE)
+    try:
+        result = subprocess.run(['git', 'rev-parse', 'HEAD'],
+                                check=True, stdout=subprocess.PIPE)
+    except subprocess.CalledProcessError:
+        return __version__
+    
     os.chdir(cwd)
     if result.returncode == 0:
         checksum = result.stdout.decode('utf-8').strip()
