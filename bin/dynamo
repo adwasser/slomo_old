@@ -3,6 +3,7 @@
 import sys
 import os
 import argparse
+from multiprocessing import cpu_count
 
 from dynamo.io import _version_string
 from dynamo.run import info, init, sample, mock
@@ -13,7 +14,8 @@ dynamo
 version : {}
 --------------------------------------------------
 Construct and run dynamical models.
-""".format(_version_string())
+{:d} cpus available
+""".format(_version_string(), cpu_count())
 
 parser = argparse.ArgumentParser(description=help_str,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
