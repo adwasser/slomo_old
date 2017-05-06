@@ -3,7 +3,7 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-with open(path.join(here, "_version.py"), encoding="utf-8") as f:
+with open(path.join(here, "dynamo/_version.py"), encoding="utf-8") as f:
     # sets version
     line = f.readline()
     __version__ = line.split("=")[1].strip("\"' \n")
