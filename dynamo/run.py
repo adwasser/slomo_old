@@ -65,8 +65,11 @@ def mock():
 
 def sample(hdf5_file, niter, threads=None, mock=False):
     """Sample from the DynamicalModel instance."""
-    assert io._version_string() == io.read_dataset(hdf5_file, "version"), \
-        "Version of hdf5 file doesn't match the version of dynamo!"
+    dynamo_version = io._version_string()
+    hdf5_version = io.read_dataset(hdf5_file, "version")
+    assert dynamo_version == hdf5_version, \
+        ("Version of hdf5 file ({}) doesn't match the version of dynamo"
+         "({})!").format(hdf5_version, dynamo_version)
 
     model = io.read_model(hdf5_file)
 
