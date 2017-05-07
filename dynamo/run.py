@@ -69,7 +69,7 @@ def sample(hdf5_file, niter, threads=None, mock=False):
     hdf5_version = io.read_dataset(hdf5_file, "version")
     assert dynamo_version == hdf5_version, \
         ("Version of hdf5 file ({}) doesn't match the version of dynamo"
-         "({})!").format(hdf5_version, dynamo_version)
+         " ({})!").format(hdf5_version, dynamo_version)
 
     model = io.read_model(hdf5_file)
 
@@ -80,7 +80,7 @@ def sample(hdf5_file, niter, threads=None, mock=False):
     max_threads = multiprocess.cpu_count()
     if threads is None:
         threads = max_threads
-    assert isinstance(threads, int)
+    threads = int(threads)
     if threads < 0:
         threads = max_threads + threads
     if threads > 1:
