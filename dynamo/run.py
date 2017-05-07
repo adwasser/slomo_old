@@ -22,7 +22,7 @@ def info(hdf5_file):
     model = io.read_model(hdf5_file)
     info_str = 50 * "=" + '\n'
     info_str += "dynamo\n"
-    info_str += "version : {}\n".format(io._version_string())
+    info_str += "version : {}\n".format(io.read_dataset(hdf5_file, "version"))
     info_str += "nwalkers : {}, niterations : {}, ndim : {}\n".format(*io.chain_shape(hdf5_file))
     info_str += 50 * "=" + '\n'
     divide = 50 * "-" + '\n'
@@ -67,10 +67,9 @@ def sample(hdf5_file, niter, threads=None, mock=False):
     """Sample from the DynamicalModel instance."""
     dynamo_version = io._version_string()
     hdf5_version = io.read_dataset(hdf5_file, "version")
-    assert dynamo_version == hdf5_version, \
-        ("Version of hdf5 file ({}) doesn't match the version of dynamo"
-         " ({})!").format(hdf5_version, dynamo_version)
-
+    if dynamo_version != hdf5_version:
+        printf("Version of hdf5 file ({}) doesn't match the version of dynamo"
+               " ({})!".format(hdf5_version, dynamo_version))
     model = io.read_model(hdf5_file)
 
     settings = io.read_group(hdf5_file, "settings")
