@@ -4,7 +4,7 @@ Jeans modeling with multiple tracer populations.
 
 ## Dependencies
 
-* python 3.5
+* python >= 3.5
   * numpy
   * scipy
   * astropy
@@ -13,6 +13,7 @@ Jeans modeling with multiple tracer populations.
   * multiprocess
   * ruamel.yaml
   * h5py
+  * psutil
 
 ```
 usage: dynamo [-h] [--verbose] {init,sample,run,mock} ...

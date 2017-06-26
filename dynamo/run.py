@@ -9,6 +9,7 @@ import functools
 
 import dill as pickle
 import multiprocess
+import psutil
 
 import numpy as np
 from emcee import EnsembleSampler
@@ -40,7 +41,7 @@ def info(hdf5_file):
         info_str += "\t" + name + " : " + mm.likelihood.__name__ + "\n"
     info_str += "\n" + divide + "Parameters\n" + divide
     for name, param in model.params.items():
-        info_str += "\t" + name + " : lnprior: " + param._lnprior.__name__
+        info_str += "\t" + name + " : " + param._lnprior.__name__
         info_str += "(x, {})\n".format(", ".join(map(str, param._lnprior_args)))
     info_str += "\n" + divide + "Constants\n" + divide
     for const, value in model.constants.items():
@@ -76,7 +77,7 @@ def sample(hdf5_file, niter, threads=None, mock=False):
     nwalkers = settings['nwalkers']
     ndim = len(model.params)
 
-    max_threads = multiprocess.cpu_count()
+    max_threads = psutil.cpu_count(logical=False)
     if threads is None:
         threads = max_threads
     threads = int(threads)
