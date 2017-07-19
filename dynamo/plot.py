@@ -9,7 +9,7 @@ from emcee.autocorr import function as autocorr_function
 from emcee.autocorr import integrated_time
 from corner import corner
 
-from .utils import get_params, radians_per_arcsec
+from .utils import get_params, radians_per_arcsec, G
 from . import mass, io
 
 label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
@@ -184,5 +184,73 @@ def mass_plot(outfile, burn_fraction=0.5, rmin=1, rmax=1000,
     ax.set_yscale('log')
     ax.set_xlabel('R  [arcsec]')
     ax.set_ylabel(r'M(<R)  [M$_\odot$]')
+    return fig, ax
+    
+def vc_plot(outfile, burn_fraction=0.5, rmin=1, rmax=1000,
+            nsamples=10000, size=50):
+    """
+    Plot circular velocity components.
+    outfile : str, path to hdf5 file
+    burn_fraction : float in (0, 1), fraction of chain to discard
+    rmin : float, arcsec, minimum radius
+    rmax : float arcsec, maximum radius
+    nsamples : int, number of subsamples of chain
+    size : int, number of radial points on grid
+    """
+    chain = io.read_dataset(outfile, "chain")
+    model = io.read_model(outfile)
+    mass_model = model.mass_model
+    nwalkers, niterations, ndim = chain.shape
+    assert ndim == len(model.params)
+    keep = round(niterations * burn_fraction)
+    samples = chain[:, keep:, :].reshape((-1, ndim))
+
+    # construct profiles for each mass component
+    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
+    radii = np.logspace(np.log10(rmin), np.log10(rmax), size)
+    profiles = np.zeros((len(mass_model), nsamples, size))
+    distances = np.empty(nsamples)
+    for i, param_values in enumerate(samples[idx]):
+        param_map = model.params.mapping(param_values)
+        kwargs = {**param_map, **model.constants}
+        for j, (name, mass_component) in enumerate(mass_model.items()):
+            profiles[j][i] = mass_component(radii, **kwargs)
+        distances[i] = kwargs['dist']
+    color = cycle(["C" + str(i) for i in range(6)])
+    style = cycle(["--", "-.", ":"])
+    label_map = {"dm": r"$v_\mathrm{dm}$", "st": r"$v_*$", "bh": r"$v_\mathrm{bh}$"}
+    fig, ax = plt.subplots()
+    for i, (name, mass_component) in enumerate(mass_model.items()):    
+        M_low, M_med, M_high = np.percentile(profiles[i], [16, 50, 84], axis=0)
+        c = next(color)
+        s = next(style)
+        try:
+            label = label_map[name]
+        except KeyError:
+            label = name
+        kpc_per_arcsec = distances[i] * radians_per_arcsec
+        kpc = kpc_per_arcsec * radii
+        vc_med = np.sqrt(G * M_med / kpc)
+        vc_low = np.sqrt(G * M_low / kpc)
+        vc_high = np.sqrt(G * M_high / kpc)
+        ax.plot(radii, vc_med, c + s, label=label)
+        ax.fill_between(radii, vc_low, vc_high, facecolor=c, alpha=0.3)
+    # total mass profile
+    M_low, M_med, M_high = np.percentile(np.sum(profiles, axis=0), [16, 50, 84], axis=0)
+    kpc_per_arcsec = np.median(distances) * radians_per_arcsec
+    kpc = kpc_per_arcsec * radii
+    vc_med = np.sqrt(G * M_med / kpc)
+    vc_low = np.sqrt(G * M_low / kpc)
+    vc_high = np.sqrt(G * M_high / kpc)
+    
+    ax.plot(radii, vc_med, 'k-', label=r"$v_\mathrm{tot}$")
+    ax.fill_between(radii, vc_low, vc_high, facecolor='k', alpha=0.3)
+
+    ax.legend(loc="best")
+    ax.set_xlim(radii.min(), radii.max())
+    ax.set_xscale('log')
+    # ax.set_yscale('log')
+    ax.set_xlabel('R  [arcsec]')
+    ax.set_ylabel(r'$v_\mathrm{circ}$  [km s$^{-1}$]')
     return fig, ax
     
