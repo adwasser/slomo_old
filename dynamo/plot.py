@@ -140,6 +140,84 @@ def corner_plot(outfile, burn_fraction=0.5, **kwargs):
     return fig
 
 
+def component_plot(outfile, burn_fraction=0.75, rmin=1, rmax=1000,
+                   nsamples=10000, size=50, **fig_kwargs):
+    """Plot mass components and total mass.
+    outfile : str, path to hdf5 file
+    burn_fraction : float in (0, 1), fraction of chain to discard
+    rmin : float, arcsec, minimum radius
+    rmax : float arcsec, maximum radius
+    nsamples : int, number of subsamples of chain
+    size : int, number of radial points on grid
+    """
+    chain = io.read_dataset(outfile, "chain")
+    model = io.read_model(outfile)
+    mass_model = model.mass_model
+    nwalkers, niterations, ndim = chain.shape
+    assert ndim == len(model.params)
+    keep = round(niterations * burn_fraction)
+    samples = chain[:, keep:, :].reshape((-1, ndim))
+
+    # construct profiles for each mass component
+    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
+    radii = np.logspace(np.log10(rmin), np.log10(rmax), size)
+    profiles = np.zeros((len(mass_model), nsamples, size))
+    distances = np.zeros(nsamples)
+    for i, param_values in enumerate(samples[idx]):
+        param_map = model.params.mapping(param_values)
+        kwargs = {**param_map, **model.constants}
+        distances[i] = kwargs['dist']
+        for j, (name, mass_component) in enumerate(mass_model.items()):
+            profiles[j][i] = mass_component(radii, **kwargs)
+
+    color = cycle(["C" + str(i) for i in range(6)])
+    style = cycle(["--", "-.", ":"])
+    label_map = {"dm": "DM", "st": "Stars", "bh": "BH"}
+
+    fig, (ax0, ax1) = plt.subplots(2, sharex=True, **fig_kwargs)
+
+    for i, (name, mass_component) in enumerate(mass_model.items()):
+        M_low, M_med, M_high = np.percentile(profiles[i], [16, 50, 84], axis=0)
+        c = next(color)
+        s = next(style)
+        try:
+            label = label_map[name]
+        except KeyError:
+            label = name
+        kpc_per_arcsec = distances[i] * radians_per_arcsec
+        kpc = kpc_per_arcsec * radii
+        vc_med = np.sqrt(G * M_med / kpc)
+        vc_low = np.sqrt(G * M_low / kpc)
+        vc_high = np.sqrt(G * M_high / kpc)
+        ax0.plot(radii, vc_med, c + s, label=label)
+        ax0.fill_between(radii, vc_low, vc_high, facecolor=c, alpha=0.3)
+        ax1.plot(radii, M_med, c + s)
+        ax1.fill_between(radii, M_low, M_high, facecolor=c, alpha=0.3)
+    # total mass profile
+    M_low, M_med, M_high = np.percentile(np.sum(profiles, axis=0),
+                                         q=[16, 50, 84], axis=0)
+    kpc_per_arcsec = np.median(distances) * radians_per_arcsec
+    kpc = kpc_per_arcsec * radii
+    vc_med = np.sqrt(G * M_med / kpc)
+    vc_low = np.sqrt(G * M_low / kpc)
+    vc_high = np.sqrt(G * M_high / kpc)
+    ax0.plot(radii, vc_med, 'k-', label="Total")
+    ax0.fill_between(radii, vc_low, vc_high, facecolor='k', alpha=0.3)
+    ax1.plot(radii, M_med, 'k-')
+    ax1.fill_between(radii, M_low, M_high, facecolor='k', alpha=0.3)
+
+    ax0.legend(loc="best")
+    ax0.set_xlim(radii.min(), radii.max())
+    ax0.set_xscale('log')
+    ax0.set_ylabel(r'$v_\mathrm{circ}$  [km s$^{-1}$]')
+    ax1.set_xlim(radii.min(), radii.max())
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_ylabel(r'$M(<R)$  [M$_\odot$]')
+    ax1.set_xlabel('R  [arcsec]')
+    return fig, (ax0, ax1)
+
+
 def mass_plot(outfile, burn_fraction=0.5, rmin=1, rmax=1000,
               nsamples=10000, size=50):
     """
