@@ -12,16 +12,25 @@ from corner import corner
 from .utils import get_params, radians_per_arcsec, G
 from . import mass, io
 
-label_map = {"r_s": r"$r_s$", "rho_s": r"$\rho_s$", "gamma": r"$\gamma$",
-             "upsilon": r"$\Upsilon_*$", "beta_s": r"$\beta_s$",
-             "beta_b": r"$\beta_b$", "beta_r": r"$\beta_r$", "dist": r"$D$",
-             "phi_b": r"$\phi_b$", "alpha_s": r"$\alpha_*$",
-             "I0_s": r"$\Sigma_{0, *}$", "Re_s": r"$R_{\mathrm{eff}, *}$",
-             "n_s": r"$n_*$", "r_a": r"$r_a$", "M200": r"M$_{200}$",
+label_map = {"r_s": r"$\log_{10} r_s$",
+             "rho_s": r"$\log_{10} \rho_s$",
+             "gamma": r"$\gamma$",
+             "upsilon": r"$\Upsilon_*$",
+             "beta_s": r"$\tilde{\beta}_*$",
+             "beta_b": r"$\tilde{\beta}_b$",
+             "beta_r": r"$\tilde{\beta}_r$",
+             "dist": r"$D$",
+             "phi_b": r"$\phi_b$",
+             "I0_s": r"$\log_{10} \Sigma_{0, *}$",
+             "Re_s": r"$\log_{10} R_{\mathrm{eff}, *}$",
+             "n_s": r"$n_*$", "r_a": r"$r_a$",
+             "M200": r"\log_{10} M$_{200}$",
+             "c200": r"$c_{200}$",
              "alpha_stars": r"$\alpha_*$", "alpha_gc": r"$\alpha_\mathrm{gc}$",
              "alpha_mass": r"$\alpha_m$", "alpha_ms": r"$\alpha_\mathrm{ms}$",
              "alpha_ls": r"$\alpha_\mathrm{ls}$",
-             "alpha_sp": r"$\alpha_\mathrm{sp}$", "M_bh": r"M$_\mathrm{bh}$"}
+             "alpha_sp": r"$\alpha_\mathrm{sp}$",
+             "M_bh": r"M$_\mathrm{bh}$"}
 
 
 def walker_plot(outfile, skip_step=100):
@@ -44,7 +53,7 @@ def walker_plot(outfile, skip_step=100):
 
     ncols = int(np.sqrt(ndim))
     nrows = int(np.ceil(ndim / ncols))
-    fig, axarr = plt.subplots(nrows, ncols, sharex="col")
+    fig, axarr = plt.subplots(nrows, ncols, sharex="col", figsize=(4.8 * ncols, 2.4 * nrows))
     fig.tight_layout(w_pad=1.5, h_pad=0.5)
     for i in range(ndim):
         col = i % ncols
@@ -53,7 +62,7 @@ def walker_plot(outfile, skip_step=100):
         for j in range(nwalkers):
             samples = chain[j, ::n, i]
             axarr[row][col].plot(steps, samples, alpha=0.3)
-        axarr[row][col].annotate(labels[i], xy=(0.1, 0.6), xycoords="axes fraction",
+        axarr[row][col].annotate(labels[i], xy=(0.1, 0.8), xycoords="axes fraction",
                                  bbox={"fc":"w", "ec": "k", "pad": 4.0, "alpha": 0.5})
         axarr[row][col].set_yticks([walkers.min(), (walkers.min() + walkers.max()) / 2, walkers.max()])
         axarr[row][col].yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.1f"))
@@ -88,7 +97,8 @@ def autocorr_plot(outfile, skip_step=100, **kwargs):
     ncols = int(np.sqrt(ndim))
     nrows = int(np.ceil(ndim / ncols))
     label_str = r'$\sqrt{\tau_\mathrm{int} / n} = $'    
-    fig, axarr = plt.subplots(nrows, ncols, sharex="col", sharey="row")
+    fig, axarr = plt.subplots(nrows, ncols, sharex="col", sharey="row",
+                              figsize=(4.8 * ncols, 2.4 * nrows))
     # fig.tight_layout()
     for i in range(ndim):
         col = i % ncols
