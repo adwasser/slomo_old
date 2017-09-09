@@ -30,7 +30,7 @@ label_map = {"r_s": r"$\log_{10} r_s$",
              "alpha_mass": r"$\alpha_m$", "alpha_ms": r"$\alpha_\mathrm{ms}$",
              "alpha_ls": r"$\alpha_\mathrm{ls}$",
              "alpha_sp": r"$\alpha_\mathrm{sp}$",
-             "M_bh": r"M$_\mathrm{bh}$"}
+             "M_bh": r"$\log_{10}$ M$_\mathrm{bh}$"}
 
 
 def walker_plot(outfile, skip_step=100):
