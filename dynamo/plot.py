@@ -32,6 +32,12 @@ label_map = {"r_s": r"$\log_{10} r_s$",
              "alpha_sp": r"$\alpha_\mathrm{sp}$",
              "M_bh": r"$\log_{10}$ M$_\mathrm{bh}$"}
 
+corner_kwargs = {'quantiles': [.16, .5, .84],
+                 'hist_kwargs': {'lw': 2}, 'use_math_text': True,
+                 'show_titles': True, 'title_kwargs': {'fontsize': 16},
+                 'plot_datapoints': True, 'fill_contours': True,
+                 'plot_density': True,
+                 'contourf_kwargs': {'cmap': 'BuPu', 'colors': None}}
 
 def walker_plot(outfile, skip_step=100):
     """Does the walker choose the path or does the path choose the walker?"""
@@ -130,12 +136,8 @@ def corner_plot(outfile, burn_fraction=0.5, **kwargs):
             labels.append(name)
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
-    kwargs.update({'labels': labels, 'quantiles': [.16, .5, .84],
-                   'hist_kwargs': {'lw': 2}, 'use_math_text': True,
-                   'show_titles': True, 'title_kwargs': {'fontsize': 16},
-                   'plot_datapoints': True, 'fill_contours': True,
-                   'plot_density': True,
-                   'contourf_kwargs': {'cmap': 'BuPu', 'colors': None}})
+    kwargs.update(corner_kwargs)
+    kwargs.update(labels=labels)
     fig = corner(samples, **kwargs)
     return fig
 
