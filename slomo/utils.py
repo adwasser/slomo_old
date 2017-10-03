@@ -11,7 +11,9 @@ from astropy import units as u
 np.seterr(all='raise')
 
 radians_per_arcsec = u.arcsec.to(u.radian)
-G = c.G.to(u.Msun**-1 * u.kpc * (u.km/u.s)**2).value # G in Msun-1 kpc km2 s-2
+G = c.G.to(u.Msun**-1 * u.kpc *
+           (u.km / u.s)**2).value  # G in Msun-1 kpc km2 s-2
+
 
 def get_function(module, name):
     """Inspect module to get the named function."""
@@ -24,4 +26,3 @@ def get_params(function):
     signature = inspect.signature(function)
     parameters = [param for param in signature.parameters]
     return parameters
-

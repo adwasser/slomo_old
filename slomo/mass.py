@@ -9,8 +9,13 @@ from .surface_density import b_cb
 from .volume_density import p_ln
 from .utils import radians_per_arcsec
 
-def _r200(mass_function, mass_params,
-          rlow=1, rhigh=10000, delta_c=200, rho_crit=137):
+
+def _r200(mass_function,
+          mass_params,
+          rlow=1,
+          rhigh=10000,
+          delta_c=200,
+          rho_crit=137):
     """Computes r200 for the specified DM halo.
     M_dm(r) = mass_function(r, *mass_params)
     rlow and rhigh should bracket the virial radius
@@ -23,19 +28,19 @@ def _r200(mass_function, mass_params,
 
 def _gNFW_to_NFW(rho_s, r_s, gamma):
     """(rho_s, r_s, gamma) -> (M200, c200)"""
-    h = 0.678 # Planck 2015
-    rho_crit = 277.46 * h ** 2 # Msun / kpc^3
+    h = 0.678  # Planck 2015
+    rho_crit = 277.46 * h**2  # Msun / kpc^3
     M = lambda r: M_gNFW(r, r_s, rho_s, gamma, dist=1 / radians_per_arcsec)
     r200 = _r200(M, (), delta_c=200, rho_crit=rho_crit)
-    M200 = 4 * np.pi * r200 ** 3 / 3 * (200 * rho_crit)
+    M200 = 4 * np.pi * r200**3 / 3 * (200 * rho_crit)
     c200 = r200 / r_s
     return M200, c200
-    
+
 
 def d_n(n):
     """Einasto coefficient, as described by Retana-Montenegro+2012."""
-    return (3 * n - 1 / 3. + 8 / (1215 * n) + 184 / (229635 * n**2) + 1048
-            / (31000725 * n**3) - 17557576 / (1242974068875 / n**4)) # + O(n^5)
+    return (3 * n - 1 / 3. + 8 / (1215 * n) + 184 / (229635 * n**2) + 1048 /
+            (31000725 * n**3) - 17557576 / (1242974068875 / n**4))  # + O(n^5)
 
 
 def heaviside_bh(R, M_bh, **kwargs):
@@ -55,8 +60,8 @@ def L_sersic(r, I0, Re, n, dist):
     p = p_ln(n)
     b = b_cb(n)
     a = Re / b**n
-    Ltot = 2 * np.pi * n * I0 * a ** 2 * special.gamma(2 * n)
-    return Ltot * special.gammainc((3 - p) * n, (r / a) ** (1 / n))
+    Ltot = 2 * np.pi * n * I0 * a**2 * special.gamma(2 * n)
+    return Ltot * special.gammainc((3 - p) * n, (r / a)**(1 / n))
 
 
 def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
@@ -77,7 +82,7 @@ def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     """
     # distance conversion
     kpc_per_arcsec = dist * radians_per_arcsec
-    r = r * kpc_per_arcsec    
+    r = r * kpc_per_arcsec
     omega = 3 - gamma
     factor1 = 4 * np.pi * rho_s * r_s**3 / omega
     factor2 = (r / r_s)**omega
@@ -89,21 +94,22 @@ def M_gNFW200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
     """gNFW halo parameterized with mass and concentration
     h = H0 / (100 km/s/Mpc) = 0.678 from Planck 2015
     """
-    rho_crit = 277.46 * h ** 2 # Msun / kpc^3
+    rho_crit = 277.46 * h**2  # Msun / kpc^3
     omega = 3 - gamma
-    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit)) ** (1 / 3)
+    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit))**(1 / 3)
     r_s = r200 / c200
-    rho_s = 200 * rho_crit * omega / 3 * c200 ** gamma / special.hyp2f1(omega, omega, omega + 1, -c200)
+    rho_s = 200 * rho_crit * omega / 3 * c200**gamma / special.hyp2f1(
+        omega, omega, omega + 1, -c200)
     return M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs)
 
 
 def M_gNFW_dm(r, M200, gamma, dist, h=0.678, **kwargs):
     """Mass-concentration relation from Dutton & Maccio 2014"""
-    c200 = 10 ** 0.905 * (M200 * h / 1e12) ** (-0.101)
+    c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
     return M_gNFW200(r, M200, c200, gamma, dist, h=h, **kwargs)
 
 
-def M_log(r, r_c, rho_c) :
+def M_log(r, r_c, rho_c):
     """Cumulative Mass profile from a logarithmic (LOG) potential profile."""
     return rho_c * (3 + (r / r_c)**2) / (1 + (r / r_c)**2)**2
 
@@ -124,14 +130,17 @@ def M_power(R, rho0, gamma_tot, dist, r0=1, **kwargs):
     """
     kpc_per_arcsec = dist * radians_per_arcsec
     r = R * kpc_per_arcsec
-    return 4 * np.pi * rho0 * r0 ** 3 / (3 - gamma_tot) * (r / r0) ** (3 - gamma_tot)
+    return 4 * np.pi * rho0 * r0**3 / (3 - gamma_tot) * (r / r0)**(
+        3 - gamma_tot)
 
 
-def M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+def M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist,
+                       **kwargs):
     """gNFW halo with contant M/L and Sersic luminosity profile
     R is in arcsec, converted to kpc with dist (in kpc)
     """
-    return M_gNFW(R, r_s, rho_s, gamma, dist) + M_sersic(R, upsilon, I0_s, Re_s, n_s, dist)
+    return M_gNFW(R, r_s, rho_s, gamma, dist) + M_sersic(
+        R, upsilon, I0_s, Re_s, n_s, dist)
 
 
 def M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
@@ -140,33 +149,49 @@ def M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
     profile.
     R is in arcsec, converted to kpc with dist (in kpc)
     """
-    return M_gNFW(R, r_s, rho_s, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+    return M_gNFW(R, r_s, rho_s, gamma, dist) + L_sersic(
+        R, I0_s, Re_s, n_s, dist)
 
-def M_NFW_constant_ML(R, M200, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
-    return M_NFW(R, M200, dist) + upsilon * L_sersic(R, I0_s, Re_s, n_s, dist)
 
-def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
-    return M_NFW(R, M200, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+# def M_NFW_constant_ML(R, M200, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+#     return M_NFW(R, M200, dist) + upsilon * L_sersic(R, I0_s, Re_s, n_s, dist)
+
+
+# def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
+#     return M_NFW(R, M200, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+
 
 def M_gNFW_dm_variable_ML(R, M200, gamma, I0_s, Re_s, n_s, dist, **kwargs):
     return M_gNFW_dm(R, M200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
 
-def M_gNFW200_constant_ML(R, M200, c200, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+
+def M_gNFW200_constant_ML(R, M200, c200, gamma, upsilon, I0_s, Re_s, n_s, dist,
+                          **kwargs):
     """gNFW halo with contant M/L and Sersic luminosity profile
     R is in arcsec, converted to kpc with dist (in kpc)
     """
-    return M_gNFW200(R, M200, c200, gamma, dist) + M_sersic(R, upsilon, I0_s, Re_s, n_s, dist)
+    return M_gNFW200(R, M200, c200, gamma, dist) + M_sersic(
+        R, upsilon, I0_s, Re_s, n_s, dist)
 
-def M_gNFW200_variable_ML(R, M200, c200, gamma, I0_s, Re_s, n_s, dist, **kwargs):
+
+def M_gNFW200_variable_ML(R, M200, c200, gamma, I0_s, Re_s, n_s, dist,
+                          **kwargs):
     """gNFW halo with Sersic mass stellar mass profile from variable IMF
     Here the sersic profile must be a mass surface density, not a luminosity
     profile.
     R is in arcsec, converted to kpc with dist (in kpc)
     """
-    return M_gNFW200(R, M200, c200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
+    return M_gNFW200(R, M200, c200, gamma, dist) + L_sersic(
+        R, I0_s, Re_s, n_s, dist)
 
-def M_gNFW_variable_ML_bh(R, M_bh, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
-    return M_bh + M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs)
 
-def M_gNFW_constant_ML_bh(R, M_bh, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
-    return M_bh + M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist, **kwargs)
+def M_gNFW_variable_ML_bh(R, M_bh, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist,
+                          **kwargs):
+    return M_bh + M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s,
+                                     dist, **kwargs)
+
+
+def M_gNFW_constant_ML_bh(R, M_bh, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s,
+                          dist, **kwargs):
+    return M_bh + M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s,
+                                     n_s, dist, **kwargs)

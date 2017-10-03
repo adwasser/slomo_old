@@ -4,15 +4,21 @@ from collections import OrderedDict
 
 import numpy as np
 
-from . import (mass, anisotropy, surface_density, volume_density,
-               pdf, jeans)
-from .utils import radians_per_arcsec
-from .parameters import Parameter, ParamDict
+from . import (pdf, jeans)
+from .parameters import Parameter
+
 
 class DynamicalModel:
-    def __init__(self, params, constants, tracers, mass_model, measurements,
-                 weight_max=10, **settings):
-        """Complete description of the dynamical model, including measurement model, data, and priors.
+    def __init__(self,
+                 params,
+                 constants,
+                 tracers,
+                 mass_model,
+                 measurements,
+                 weight_max=10,
+                 **settings):
+        """Complete description of the dynamical model, including measurement
+        model, data, and priors.
 
         Parameters
         ----------
@@ -31,25 +37,27 @@ class DynamicalModel:
         # add weight parameters
         for mm in self.measurements.values():
             if mm.weight:
-                weight_param = Parameter("alpha_" + mm.name, value=1, lnprior=pdf.lnexp_truncated,
-                                         lnprior_args=(1, weight_max))
+                weight_param = Parameter(
+                    "alpha_" + mm.name,
+                    value=1,
+                    lnprior=pdf.lnexp_truncated,
+                    lnprior_args=(1, weight_max))
                 self.params[weight_param.name] = weight_param
         self._settings = settings
-        
+
     def __repr__(self):
-        fmt_str = "<{}: {:d} mass components, {:d} tracers>" 
+        fmt_str = "<{}: {:d} mass components, {:d} tracers>"
         return fmt_str.format(self.__class__.__name__,
-                              len(self.mass_model),
-                              len(self.tracers))
+                              len(self.mass_model), len(self.tracers))
 
     def construct_kwargs(self, param_values):
         return {**self.constants, **self.params.mapping(param_values)}
 
     def __call__(self, param_values):
         """Log of the posterior probability"""
-        
+
         kwargs = self.construct_kwargs(param_values)
-        
+
         # log of the prior probability
         lnprior = self.params.lnprior(param_values)
         if not np.isfinite(lnprior):
@@ -66,15 +74,17 @@ class DynamicalModel:
                 return -np.inf
         return lnprior + lnlike
 
-    
+
 class MassModel(OrderedDict):
     """Multi-component mass model, names index functions"""
+
     def __call__(self, radii, **kwargs):
         return sum([M(radii, **kwargs) for M in self.values()])
 
-    
+
 class Tracer:
-    def __init__(self, name, anisotropy, surface_density, volume_density, mass_model):
+    def __init__(self, name, anisotropy, surface_density, volume_density,
+                 mass_model):
         """A dynamical tracer.  It shows some potential...
 
         Parameters
@@ -89,7 +99,7 @@ class Tracer:
         self.volume_density = volume_density
         self.surface_density = surface_density
         self.mass_model = mass_model
-        
+
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
 
@@ -110,10 +120,9 @@ class Tracer:
         I = lambda R: self.surface_density(R, **kwargs)
         nu = lambda r: self.volume_density(r, **kwargs)
         return jeans.sigma_jeans(radii, M, K, I, nu)
-        
+
 
 class Measurement:
-
     def __init__(self, name, likelihood, model, observables, weight=False):
         """Likelihood function with data.
 
@@ -176,7 +185,3 @@ class Measurement:
             return self.likelihood(I_model, I, dI)
         else:
             raise ValueError(self.likelihood.__name__ + " not found!")
-        
-        
-
-

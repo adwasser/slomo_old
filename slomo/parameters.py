@@ -1,11 +1,17 @@
 from collections import OrderedDict
 
+
 def identity(x):
     return x
 
-class Parameter:
 
-    def __init__(self, name, value, lnprior, lnprior_args=None, transform=identity):
+class Parameter:
+    def __init__(self,
+                 name,
+                 value,
+                 lnprior,
+                 lnprior_args=None,
+                 transform=identity):
         """Model parameter object
 
         name : str, name of parameter
@@ -26,7 +32,7 @@ class Parameter:
 
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
-    
+
     @property
     def value(self):
         # parameter value as seen by dynamical model
@@ -39,12 +45,12 @@ class Parameter:
     def lnprior(self, value):
         return self._lnprior(value, *self._lnprior_args)
 
-    
+
 class ParamDict(OrderedDict):
     """OrderedDict of Parameter objects
     TODO: enforce all entries being Parameter objects at init and setitem.
     """
-    
+
     @property
     def names(self):
         return list(self.keys())

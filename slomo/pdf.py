@@ -3,6 +3,7 @@
 import numpy as np
 from scipy import special
 
+
 def lnuniform(value, lower, upper):
     """Log of a uniform distribution.
 
@@ -38,6 +39,7 @@ def lnbeta(x, alpha, beta):
     term2 = (beta - 1) * np.log(1 - x)
     term3 = -np.log(special.beta(alpha, beta))
     return term1 + term2 + term3
+
 
 def lnexp(x, beta):
     """Log of an exponential distribution
@@ -107,7 +109,5 @@ def lngauss_discrete(v, dv, sigma):
     -------
     lnlike : float in (-inf, 0)
     """
-    std = np.sqrt(sigma ** 2 + dv ** 2)
+    std = np.sqrt(sigma**2 + dv**2)
     return lngauss(v, 0, std)
-
-

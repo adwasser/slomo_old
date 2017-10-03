@@ -44,13 +44,28 @@ optional arguments:
 ```
 
 ```
-usage: slomo sample [-h] [--mock] hdf5 niter
+usage: slomo sample [-h] [--mock] [--threads THREADS] hdf5 niter
 
 positional arguments:
-  hdf5        hdf5 output file
-  niter       Number of iterations to run.
+  hdf5               hdf5 output file
+  niter              Number of iterations to run.
 
 optional arguments:
-  -h, --help  show this help message and exit
-  --mock      If selected, sample from mock data instead of stored data.
+  -h, --help         show this help message and exit
+  --mock             If selected, sample from mock data instead of stored
+                     data.
+  --threads THREADS  Number of threads to use.
+```
+
+```
+usage: slomo run [-h] [--threads THREADS] config niter
+
+positional arguments:
+  config             Config file in YAML format. See docs for required
+                     entries.
+  niter              Number of iterations to run.
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --threads THREADS  Number of threads to use.
 ```

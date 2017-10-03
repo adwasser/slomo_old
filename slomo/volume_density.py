@@ -11,6 +11,7 @@ from scipy.integrate import quad
 from .utils import radians_per_arcsec
 from .surface_density import b_cb
 
+
 def p_ln(n):
     """'p' parameter in fitting deprojected Sersic function, 
     from Lima Neto et al. (1999)
@@ -31,11 +32,11 @@ def nu_sersic(r, I0, Re, n, dist):
     kpc_per_arcsec = dist * radians_per_arcsec
     r = r * kpc_per_arcsec
     Re = Re * kpc_per_arcsec
-    
+
     b = b_cb(n)
     p = p_ln(n)
-    nu0 = (I0 * b**n * special.gamma(2 * n) /
-           (2 * Re * special.gamma((3 - p) * n)))
+    nu0 = (I0 * b**n * special.gamma(2 * n) / (2 * Re * special.gamma(
+        (3 - p) * n)))
     nu = nu0 * (b**n * r / Re)**(-p) * np.exp(-b_cb(n) * (r / Re)**(1 / n))
     return nu
 
@@ -63,15 +64,15 @@ def nu_integral(r, dIdR):
         size = len(r)
     except TypeError as e:
         # R is not iterable
-        args = (r,)
+        args = (r, )
         integral = quad(integrand, R, np.inf, args=args)[0]
     else:
         integral = np.empty(size)
         integral[:] = np.nan
         for i, radius in enumerate(r):
-            args = (radius,)
+            args = (radius, )
             integral[i] = quad(integrand, radius, np.inf, args=args)[0]
-    return - 1 / np.pi * integral
+    return -1 / np.pi * integral
 
 
 def L_sersic_tot(I0, Re, n):
@@ -94,7 +95,8 @@ def L_sersic(r, I0, Re, n):
     a = Re / b**n
     rho0 = I0 * special.gamma(2 * n) / (2 * a * special.gamma((3 - p) * n))
     x = (r / a)**(1 / n)
-    return 4 * np.pi * rho0 * a**3 * n * special.gammainc((3 - p) * n, x) * special.gamma((3 - p) * n)
+    return 4 * np.pi * rho0 * a**3 * n * special.gammainc(
+        (3 - p) * n, x) * special.gamma((3 - p) * n)
 
 
 def L_R_sersic(R, I0, Re, n):

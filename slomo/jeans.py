@@ -6,8 +6,15 @@ from scipy.interpolate import interp1d
 
 from .utils import G
 
-def sigma_jeans(R, M, K, I, nu,
-                interp_points=10, cutoff_factor=100, return_interp=False):
+
+def sigma_jeans(R,
+                M,
+                K,
+                I,
+                nu,
+                interp_points=10,
+                cutoff_factor=100,
+                return_interp=False):
     """Velocity dispersion in the spherically symmetric Jeans model.  For an array
     of input radii, the returned profile is calculated from an interpolated grid
     of a given size, distributed logrithmically across the radial range.
@@ -35,7 +42,8 @@ def sigma_jeans(R, M, K, I, nu,
         interp_points = None
     integrand = lambda r, R: K(r, R) * nu(r) * M(r) / r
     if interp_points is not None:
-        radii = np.logspace(np.log10(np.amin(R)), np.log10(np.amax(R)), interp_points)
+        radii = np.logspace(
+            np.log10(np.amin(R)), np.log10(np.amax(R)), interp_points)
         # adjust lower and upper bounds to ensure we don't go out of interpolation domain
         radii[0] -= 0.01
         radii[-1] += 0.01
@@ -46,7 +54,7 @@ def sigma_jeans(R, M, K, I, nu,
     integral = np.empty(size)
     integral[:] = np.nan
     for i, radius in enumerate(radii):
-        args = (radius,)
+        args = (radius, )
         integral[i] = quad(integrand, radius, cutoff_radius, args=args)[0]
     # G will convert units from Msun, kpc to km/s
     sigma = np.sqrt(2 * G / I(radii) * integral)

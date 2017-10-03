@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-import os
 import argparse
-from multiprocessing import cpu_count
+from psutil import cpu_count
 
 from slomo.io import _version_string
 from slomo.run import info, init, sample, mock
@@ -15,20 +14,26 @@ version : {}
 --------------------------------------------------
 Construct and run dynamical models.
 {:d} cpus available
-""".format(_version_string(), cpu_count())
+""".format(
+    _version_string(), cpu_count(logical=False))
 
-parser = argparse.ArgumentParser(description=help_str,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument('--verbose', action='store_true', help='not implemented yet')
+parser = argparse.ArgumentParser(
+    description=help_str, formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument(
+    '--verbose', action='store_true', help='not implemented yet')
 
 subparsers = parser.add_subparsers(help='Available commands')
 
 # init command
 parser_init = subparsers.add_parser("init", help="Construct a model")
 parser_init.set_defaults(command="init")
-parser_init.add_argument("config", help="Config file in YAML format.  See docs for required entries.")
-parser_init.add_argument("--clobber", action="store_true",
-                         help="If selected, overwrite existing hdf5 output file.")
+parser_init.add_argument(
+    "config",
+    help="Config file in YAML format.  See docs for required entries.")
+parser_init.add_argument(
+    "--clobber",
+    action="store_true",
+    help="If selected, overwrite existing hdf5 output file.")
 
 # info command
 parser_info = subparsers.add_parser("info", help="Quick info on the model.")
@@ -36,25 +41,33 @@ parser_info.set_defaults(command="info")
 parser_info.add_argument("hdf5", help="hdf5 output file")
 
 # sample command
-parser_sample = subparsers.add_parser("sample", help="Sample from an existing model.")
+parser_sample = subparsers.add_parser(
+    "sample", help="Sample from an existing model.")
 parser_sample.set_defaults(command="sample")
 parser_sample.add_argument("hdf5", help="hdf5 output file")
-parser_sample.add_argument("niter", type=int, help="Number of iterations to run.")
-parser_sample.add_argument("--mock", action="store_true",
-                           help="If selected, sample from mock data instead of stored data.")
-parser_sample.add_argument("--threads", help="Number of threads to use.", default=None)
+parser_sample.add_argument(
+    "niter", type=int, help="Number of iterations to run.")
+parser_sample.add_argument(
+    "--mock",
+    action="store_true",
+    help="If selected, sample from mock data instead of stored data.")
+parser_sample.add_argument(
+    "--threads", help="Number of threads to use.", default=None)
 
 # run command
-parser_run = subparsers.add_parser("run",
-                                   help="Shortcut for init and sample for new model output.")
+parser_run = subparsers.add_parser(
+    "run", help="Shortcut for init and sample for new model output.")
 parser_run.set_defaults(command="run")
-parser_run.add_argument("config",
-                        help="Config file in YAML format.  See docs for required entries.")
+parser_run.add_argument(
+    "config",
+    help="Config file in YAML format.  See docs for required entries.")
 parser_run.add_argument("niter", type=int, help="Number of iterations to run.")
-parser_run.add_argument("--threads", help="Number of threads to use.", default=None)
+parser_run.add_argument(
+    "--threads", help="Number of threads to use.", default=None)
 
 # mock command
-parser_mock = subparsers.add_parser("mock", help="Create mock data from specified model parameters.")
+parser_mock = subparsers.add_parser(
+    "mock", help="Create mock data from specified model parameters.")
 parser_mock.set_defaults(command="mock")
 parser_mock.add_argument("hdf5", help="hdf5 output file")
 
@@ -65,7 +78,7 @@ try:
 except AttributeError as e:
     parser.print_help()
     sys.exit()
-    
+
 if args.command == "init":
     init(args.config, args.clobber)
 elif args.command == "info":
@@ -79,7 +92,5 @@ elif args.command == "run":
 elif args.command == "mock":
     mock(args.hdf5)
 else:
-    raise NotImplementedError("Command " + args.command + " not implemented yet.")
-
-
-
+    raise NotImplementedError("Command " + args.command +
+                              " not implemented yet.")

@@ -9,11 +9,13 @@ from scipy import special
 
 from .utils import radians_per_arcsec
 
+
 def b_cb(n):
     """'b' parameter in the Sersic function, from the Ciotti & Bertin (1999) 
     approximation.
     """
-    return - 1. / 3 + 2. * n + 4 / (405. * n) + 46 / (25515. * n**2)
+    return -1. / 3 + 2. * n + 4 / (405. * n) + 46 / (25515. * n**2)
+
 
 def I_nuker(R, Ib, Rb, alpha, beta, gamma):
     """Double power law density profile.
@@ -24,7 +26,8 @@ def I_nuker(R, Ib, Rb, alpha, beta, gamma):
     beta is the outer power law index.
     gamma is the inner power law index.
     """
-    I = Ib * 2**((beta - gamma) / alpha) * (R / Rb)**(-gamma) * (1 + (R / Rb)**alpha)**((gamma - beta) / alpha)
+    I = Ib * 2**((beta - gamma) / alpha) * (R / Rb)**(-gamma) * (
+        1 + (R / Rb)**alpha)**((gamma - beta) / alpha)
     return I
 
 
@@ -44,7 +47,7 @@ def I_sersic(R, I0, Re, n, dist):
     return I
 
 
-def I_sersic_s(R, I0_s, Re_s, n_s, dist, **kwargs):    
+def I_sersic_s(R, I0_s, Re_s, n_s, dist, **kwargs):
     return I_sersic(R, I0_s, Re_s, n_s, dist)
 
 
@@ -62,7 +65,8 @@ def mu_sersic(R, mu_eff, Re, n):
 
 def mu_eff_sersic(mtot, Re, n):
     b = b_cb(n)
-    return mtot + 5 * np.log(Re) + 2.5 * np.log(2 * np.pi * n * np.exp(b) * special.gamma(2 * n) / b**(2 * n))
+    return mtot + 5 * np.log(Re) + 2.5 * np.log(
+        2 * np.pi * n * np.exp(b) * special.gamma(2 * n) / b**(2 * n))
 
 
 def mu0_sersic(mtot, Re, n):
