@@ -1,6 +1,6 @@
-# dynamo
+# slomo
 
-Jeans modeling with multiple tracer populations.
+Spherical Jeans modeling of slow-rotator galaxies with multiple tracer populations.
 
 ## Dependencies
 
@@ -16,7 +16,7 @@ Jeans modeling with multiple tracer populations.
   * psutil
 
 ```
-usage: dynamo [-h] [--verbose] {init,sample,run,mock} ...
+usage: slomo [-h] [--verbose] {init,sample,run,mock} ...
 
 Construct and run dynamical models.
 
@@ -33,7 +33,7 @@ optional arguments:
 ```
 
 ```
-usage: dynamo init [-h] [--clobber] config
+usage: slomo init [-h] [--clobber] config
 
 positional arguments:
   config      Config file in YAML format. See docs for required entries.
@@ -44,7 +44,7 @@ optional arguments:
 ```
 
 ```
-usage: dynamo sample [-h] [--mock] hdf5 niter
+usage: slomo sample [-h] [--mock] hdf5 niter
 
 positional arguments:
   hdf5        hdf5 output file

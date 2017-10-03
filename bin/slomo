@@ -5,12 +5,12 @@ import os
 import argparse
 from multiprocessing import cpu_count
 
-from dynamo.io import _version_string
-from dynamo.run import info, init, sample, mock
+from slomo.io import _version_string
+from slomo.run import info, init, sample, mock
 
 help_str = """
 --------------------------------------------------
-dynamo
+slomo
 version : {}
 --------------------------------------------------
 Construct and run dynamical models.
