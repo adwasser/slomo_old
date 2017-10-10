@@ -3,8 +3,6 @@
 API
 ===
 
-.. module:: slomo
-
 Here we indicate how to interact with ``slomo`` programmatically through python. 
 
 Submodules
@@ -27,10 +25,3 @@ Submodules
    submodules/transforms
    submodules/utils
    submodules/volume_density
-
-Examples
---------
-
-.. toctree::
-
-   examples/example_api

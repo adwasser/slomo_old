@@ -3,6 +3,8 @@ Running
 
 ``slomo`` uses a standard UNIX-style command line interface for generating model files from model input files and sampling from the model.
 
+You can access a minimal reminder of available subcommands with ``slomo -h``, and order of arguments for a subcommand with ``slomo subcommand -h``.
+
 .. code-block:: none
    
    usage: slomo [-h] [--verbose] {init,sample,run,mock} ...
@@ -20,6 +22,10 @@ Running
    optional arguments:
    -h, --help            show this help message and exit
 
+init
+----
+
+This subcommand constructs a model file (see :ref:`output-label`) from a model configuation file (see :ref:`input-label`).
 
 .. code-block:: none
    
@@ -32,6 +38,10 @@ Running
    -h, --help  show this help message and exit
    --clobber   If selected, overwrite existing hdf5 output file.
 
+sample
+------
+
+This subcommand will draw ``niter`` samples and save them in the specified ``hdf5`` file.
 
 .. code-block:: none
    
@@ -43,10 +53,13 @@ Running
 
    optional arguments:
    -h, --help         show this help message and exit
-   --mock             If selected, sample from mock data instead of stored
-   data.
+   --mock             If selected, sample from mock data instead of stored data.
    --threads THREADS  Number of threads to use.
 
+run
+---
+
+This is a shortcut to both call ``init`` and start sampling from a specified `config` file.
 
 .. code-block:: none
    
