@@ -5,7 +5,7 @@ import argparse
 from psutil import cpu_count
 
 from slomo.io import _version_string
-from slomo.run import info, init, sample, mock
+from slomo.run import info, init, sample
 
 help_str = """
 --------------------------------------------------
@@ -19,8 +19,6 @@ Construct and run dynamical models.
 
 parser = argparse.ArgumentParser(
     description=help_str, formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument(
-    '--verbose', action='store_true', help='not implemented yet')
 
 subparsers = parser.add_subparsers(help='Available commands')
 
@@ -48,10 +46,6 @@ parser_sample.add_argument("hdf5", help="hdf5 output file")
 parser_sample.add_argument(
     "niter", type=int, help="Number of iterations to run.")
 parser_sample.add_argument(
-    "--mock",
-    action="store_true",
-    help="If selected, sample from mock data instead of stored data.")
-parser_sample.add_argument(
     "--threads", help="Number of threads to use.", default=None)
 
 # run command
@@ -64,12 +58,6 @@ parser_run.add_argument(
 parser_run.add_argument("niter", type=int, help="Number of iterations to run.")
 parser_run.add_argument(
     "--threads", help="Number of threads to use.", default=None)
-
-# mock command
-parser_mock = subparsers.add_parser(
-    "mock", help="Create mock data from specified model parameters.")
-parser_mock.set_defaults(command="mock")
-parser_mock.add_argument("hdf5", help="hdf5 output file")
 
 args = parser.parse_args()
 
@@ -89,8 +77,6 @@ elif args.command == "run":
     init(args.config)
     outfile = args.config.split(".")[0] + ".hdf5"
     sample(outfile, args.niter, threads=args.threads)
-elif args.command == "mock":
-    mock(args.hdf5)
 else:
     raise NotImplementedError("Command " + args.command +
                               " not implemented yet.")

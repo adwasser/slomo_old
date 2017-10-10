@@ -1,9 +1,9 @@
 """File input/output"""
 
 import os
+import time
 import subprocess
-import inspect
-from collections import deque, OrderedDict
+from collections import OrderedDict
 import warnings
 
 import numpy as np
@@ -15,7 +15,7 @@ try:
 except ImportError as e:
     import yaml
 
-from .models import (Tracer, Measurement, DynamicalModel, MassModel)
+from .models import (Tracer, Measurement, MassModel)
 from .utils import get_function
 from .parameters import (Parameter, ParamDict)
 from . import (pdf, likelihood, transforms, mass, anisotropy, surface_density,
@@ -172,6 +172,22 @@ def read_model(hdf5_file):
     with h5py.File(hdf5_file, "r") as f:
         return pickle.loads(f['model'].value.tostring())
 
+    
+def check_model(hdf5_file):
+    """Ensure that the model file will sample.
+
+    Parameters
+    ----------
+    hdf5_file: str
+               The name of the model file.
+    """
+    model = read_model(hdf5_file)
+    initial_values = model.params._values
+    start = time.time()
+    lnp = model(initial_values)
+    end = time.time()
+    print("Model successfully sampled in {:.2f} s".format(end - start))
+    
 
 def read_dataset(hdf5_file, path):
     """Return a stored dataset at the specified path"""

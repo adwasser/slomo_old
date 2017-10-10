@@ -64,13 +64,9 @@ def init(yaml_file, clobber=False):
     except KeyError:
         nwalkers = 10 * len(model.params)
     io.create_file(outfile, model, nwalkers=nwalkers, clobber=clobber)
+    io.check_model(outfile)
 
-
-def mock():
-    pass
-
-
-def sample(hdf5_file, niter, threads=None, mock=False):
+def sample(hdf5_file, niter, threads=None):
     """Sample from the DynamicalModel instance."""
     slomo_version = io._version_string()
     hdf5_version = io.read_dataset(hdf5_file, "version")
