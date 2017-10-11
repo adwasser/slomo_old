@@ -1,7 +1,7 @@
 """Solving the spherical Jeans equation."""
 
 import numpy as np
-from scipy.integrate import quad, IntegrationWarning
+from scipy.integrate import quad
 from scipy.interpolate import interp1d
 
 from .utils import G
@@ -21,18 +21,30 @@ def sigma_jeans(R,
 
     Parameters
     ----------
-    R: an array of projected radii, in arcsec
-    M : a function R -> enclosed mass, in Msun
-    K : the Jeans kernel, a function r, R -> ... a number,
+    R : array_like
+        projected radii, in arcsec
+    M : function
+        R -> enclosed mass, in Msun
+    K : function
+        The Jeans kernel
+        r, R -> float
         where r is the deprojected radius and R is the projected radius
-    I : the surface density of the tracer, R -> I, in count / kpc^2
-    nu : the volume density of the tracer, r -> nu, in count / kpc^3
-    interp_points: number of radial points (distributed logarithmically) 
-                   to interpolate over; if None, than compute each point without
-                   interpolation
-    cutoff_factor: the upper limit of the Jeans integral, in factors of the max
-                   of R
-    return_interp: bool, if true, return the sigma values used to interpolate
+    I : function
+        R -> I, in count / kpc^2
+        The surface density of the tracer.
+    nu : function
+        r -> nu, in count / kpc^3
+        The volume density of the tracer.
+    interp_points : int, optional
+        Number of radial points (distributed logarithmically) over which to
+        interpolate.  If None, than compute each point without interpolation.
+        Defaults to 10.
+    cutoff_factor : float, optional
+        The upper limit of the Jeans integral, in factors of the max of R.
+        Defaults to 100.
+    return_interp: bool, optional
+        If True, return the sigma values used to interpolate.
+        Defaults to False.
     """
     try:
         size = len(R)

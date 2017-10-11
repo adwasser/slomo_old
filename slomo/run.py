@@ -1,16 +1,9 @@
 """Run the jewels"""
 
-import os
-import subprocess
-import inspect
 import time
-from collections import deque
 import functools
-
-import dill as pickle
 import multiprocess
 import psutil
-
 import numpy as np
 from emcee import EnsembleSampler
 
@@ -21,6 +14,13 @@ printf = functools.partial(print, flush=True)
 
 
 def info(hdf5_file):
+    """Get model information from file.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    """
     model = io.read_model(hdf5_file)
     info_str = 50 * "=" + '\n'
     info_str += "slomo\n"
@@ -56,6 +56,15 @@ def info(hdf5_file):
 
 
 def init(yaml_file, clobber=False):
+    """Create a model hdf5 file from a YAML config file.
+
+    Parameters
+    ----------
+    yaml_file : str
+        YAML filename
+    clobber : bool, optional
+        If True, then overwrite any existing hdf5 file.
+    """
     config = io.read_yaml(yaml_file)
     model = DynamicalModel(**config)
     outfile = yaml_file.split(".")[0] + ".hdf5"
@@ -66,8 +75,20 @@ def init(yaml_file, clobber=False):
     io.create_file(outfile, model, nwalkers=nwalkers, clobber=clobber)
     io.check_model(outfile)
 
+
 def sample(hdf5_file, niter, threads=None):
-    """Sample from the DynamicalModel instance."""
+    """Sample from the DynamicalModel instance.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    niter : int
+        number of iterations
+    threads : int, optional
+        number of threads to use
+        if None, then default to the maximum allowed threads
+    """
     slomo_version = io._version_string()
     hdf5_version = io.read_dataset(hdf5_file, "version")
     if slomo_version != hdf5_version:

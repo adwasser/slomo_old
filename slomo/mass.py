@@ -1,6 +1,5 @@
 """Mass profiles"""
 
-from collections import OrderedDict
 import numpy as np
 from scipy import special
 from scipy import optimize
@@ -9,49 +8,143 @@ from .surface_density import b_cb
 from .volume_density import p_ln
 from .utils import radians_per_arcsec
 
+__all__ = [
+    "L_sersic",
+    "M_gNFW",
+    "M_gNFW200",
+    "M_NFW_dm",
+    "M_log",
+    "M_einasto",
+    "M_power",
+    "M_sersic",
+    "M_point"
+]
 
-def _r200(mass_function,
-          mass_params,
+
+def _rvir(mass_function,
           rlow=1,
           rhigh=10000,
           delta_c=200,
           rho_crit=137):
-    """Computes r200 for the specified DM halo.
-    M_dm(r) = mass_function(r, *mass_params)
-    rlow and rhigh should bracket the virial radius
+    """Computes the virial radius for the specified DM halo.
+
+    Defaults to the r200 convention (i.e., the radius enclosing an
+    average density equal to 200 times the critical density at z = 0).
+    Uses the brentq root finding algorithm from scipy.
+
+    Parameters
+    ----------
+    mass_function : function
+        r -> M, in Msun
+    rlow : float, optional
+        lower bound for finding the virial radius, in kpc
+    rhigh : float, optional
+        upper bound for finding the virial radius, in kpc
+    delta_c : float, optional
+        factor of critical density to match to the enclosed average density
+    rho_crit : float, optional
+        The critical density in Msun / kpc^3
+
+    Returns
+    -------
+    float
+        The virial radius in kpc
     """
-    f = lambda r: mass_function(r, *mass_params) * 3 / (4 * np.pi * r**3) - delta_c * rho_crit
+    f = lambda r: mass_function(r) * 3 / (4 * np.pi * r**3) - delta_c * rho_crit
     # find the zeropoint
     rv = optimize.brentq(f, rlow, rhigh, disp=True)
     return rv
 
 
-def _gNFW_to_NFW(rho_s, r_s, gamma):
-    """(rho_s, r_s, gamma) -> (M200, c200)"""
-    h = 0.678  # Planck 2015
+def _gNFW_to_200(rho_s, r_s, gamma, h=0.678):
+    """Convert gNFW parameters to M200, c200 values.
+
+    Parameters
+    ----------
+    rho_s : float or array_like
+        scale density in Msun / kpc^3
+    r_s : float or array_like
+        scale radius in kpc
+    gamma : float or array_like
+        negative inner density log slope
+    h : float, optional
+        Hubble parameter in units of 100 km/s/Mpc.
+        Defaults to the Planck 2015 value.
+
+    Returns
+    -------
+    M200 : float or array_like
+        Virial mass in Msun
+    c200 : float or array_like
+        halo concentration
+        :math:`c_{200} = r_{200} / r_s`
+    """
     rho_crit = 277.46 * h**2  # Msun / kpc^3
     M = lambda r: M_gNFW(r, r_s, rho_s, gamma, dist=1 / radians_per_arcsec)
-    r200 = _r200(M, (), delta_c=200, rho_crit=rho_crit)
+    r200 = _rvir(M, delta_c=200, rho_crit=rho_crit)
     M200 = 4 * np.pi * r200**3 / 3 * (200 * rho_crit)
     c200 = r200 / r_s
     return M200, c200
 
 
 def d_n(n):
-    """Einasto coefficient, as described by Retana-Montenegro+2012."""
+    """Einasto coefficient, as described by Retana-Montenegro+2012.
+
+    Parameters
+    ----------
+    n : float
+        Einasto index
+
+    Returns
+    -------
+    float
+    """
     return (3 * n - 1 / 3. + 8 / (1215 * n) + 184 / (229635 * n**2) + 1048 /
             (31000725 * n**3) - 17557576 / (1242974068875 / n**4))  # + O(n^5)
 
 
-def heaviside_bh(R, M_bh, **kwargs):
+def M_point(R, M_bh, **kwargs):
+    """Point mass representing a dynamically unresolved SMBH.
+
+    Parameters
+    ----------
+    R : float or array_like
+        projected radius in kpc
+    M_bh : float
+        Black hole mass in Msun
+    """
     return M_bh
 
 
 def L_sersic(r, I0, Re, n, dist):
-    """Luminosity associated with a Sersic surface density profile for a constant 
+    """Luminosity associated with a Sersic surface density profile for a constant
     mass-to-light ratio upsilon, at a deprojected radius, r.
-    Note that the scipy implementation of the incomplete gamma function includes the term 1 / Gamma(a), so that
-    the standard incomplete gamma function is gamma(a, x) = special.gamma(a) * special.gammainc(a, x)
+
+    .. note::
+
+       The scipy implementation of the incomplete gamma function includes the
+       term 1 / Gamma(a), so that the standard incomplete gamma function is
+
+       gamma(a, x) = special.gamma(a) * special.gammainc(a, x)
+
+    Parameters
+    ----------
+    r : float or array_like
+        Deprojected radius in arcsec
+    I0 : float
+        Central surface density in Lsun / kpc^2
+        Note that this is a distance-independent quantity.
+    Re : float
+        Effecive radius, in arcsec
+    n : float
+        Sersic index
+    dist : float
+        Distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed luminosity within deprojected radius `r`
     """
     # distance dependent conversions
     kpc_per_arcsec = dist * radians_per_arcsec
@@ -65,20 +158,39 @@ def L_sersic(r, I0, Re, n, dist):
 
 
 def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
+    """Remapping of L_sersic keywords."""
     return L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
 def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     """Enclosed dark matter, parameterized as a generalized NFW profile.
-    r is the input radius to evaluate enclosed mass.
-    r_s is the scale radius.
-    rho_s is the scale density.
-    gamma is the shape parameter, with g = 0 for a core and g = 1 for a cusp.
-    To derive the expression below from an integrated gNFW density profile, use
-    the integral form of the hypergeometric function with a change of variables,
-    r' -> rx, where r' is the dummy integration variable in the gNFW integrand
-    and x is the dummy variable in the hypergeometric integrand.  Note that
-    Beta(omega, 1) = 1 / omega.
+
+    .. note::
+    
+        To derive the expression below from an integrated gNFW density profile, use
+        the integral form of the hypergeometric function with a change of variables,
+        r' -> rx, where r' is the dummy integration variable in the gNFW integrand
+        and x is the dummy variable in the hypergeometric integrand.  Note that
+        Beta(omega, 1) = 1 / omega.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    gamma : float
+        negative of the inner DM density log-slope
+        gamma is 1 for a classic NFW cusp and 0 for a core
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
     """
     # distance conversion
     kpc_per_arcsec = dist * radians_per_arcsec
@@ -90,9 +202,51 @@ def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     return factor1 * factor2 * factor3
 
 
+def M_NFW(r, r_s, rho_s, dist, **kwargs):
+    """Enclosed dark matter, parameterized as a NFW profile.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    return M_gNFW(r, r_s, rho_s, 1.0, dist, **kwargs)
+
+
 def M_gNFW200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
-    """gNFW halo parameterized with mass and concentration
-    h = H0 / (100 km/s/Mpc) = 0.678 from Planck 2015
+    """gNFW halo parameterized with mass and concentration.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    gamma : float
+        negative of the inner DM density log-slope
+        gamma is 1 for a classic NFW cusp and 0 for a core
+    dist : float
+        distance in kpc
+    h : float, optional
+        Hubble parameter in units of 100 km/s/Mpc.
+        Defaults to the Planck 2015 value.
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
     """
     rho_crit = 277.46 * h**2  # Msun / kpc^3
     omega = 3 - gamma
@@ -103,95 +257,132 @@ def M_gNFW200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
     return M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs)
 
 
-def M_gNFW_dm(r, M200, gamma, dist, h=0.678, **kwargs):
-    """Mass-concentration relation from Dutton & Maccio 2014"""
+def M_NFW_dm(r, M200, dist, h=0.678, **kwargs):
+    """Mass-concentration relation from Dutton & Maccio 2014.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    dist : float
+        distance in kpc
+    h : float, optional
+        Hubble parameter in units of 100 km/s/Mpc.
+        Defaults to the Planck 2015 value.
+    
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
     c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
-    return M_gNFW200(r, M200, c200, gamma, dist, h=h, **kwargs)
+    return M_gNFW200(r, M200, c200, 1.0, dist, h=h, **kwargs)
 
 
-def M_log(r, r_c, rho_c):
-    """Cumulative Mass profile from a logarithmic (LOG) potential profile."""
+def M_log(r, r_c, rho_c, dist, **kwargs):
+    """Cumulative Mass profile from a logarithmic (LOG) potential profile.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_c : float
+        core radius in kpc
+    rho_c : float
+        core density in Msun / kpc^3
+    dist : float
+        distance in kpc
+    """
+    # distance conversion
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
     return rho_c * (3 + (r / r_c)**2) / (1 + (r / r_c)**2)**2
 
 
-def M_einasto(r, h, rho0, n_einasto):
-    """Mass profile for an Einasto halo."""
+def M_einasto(r, h, rho0, n_einasto, dist, **kwargs):
+    """Mass profile for an Einasto halo.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    h : float
+        scale radius of Einasto halo in kpc
+    rho0 : float
+        central density in Msun / kpc^3
+    n_einasto :float
+        Einasto index
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
     M = 4 * np.pi * rho0 * h**3 * n_einasto * special.gamma(3 * n_einasto)
     return M * special.gammainc(3 * n_einasto, (r / h)**(1 / n_einasto))
 
 
 def M_sersic(r, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
+    """Enclosed mass for a Sersic luminosity profile with constant
+    mass-to-light ratio.
+
+    Parameters
+    ----------
+    r : float or array_like
+        Deprojected radius in arcsec
+    upsilon : float
+        mass-to-light ratio in Msun / Lsun
+    I0_s : float
+        Central surface density in Lsun / kpc^2
+        Note that this is a distance-independent quantity.
+    Re_s : float
+        Effecive radius, in arcsec
+    n_s : float
+        Sersic index
+    dist : float
+        Distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed Mass within deprojected radius `r`
+    """
     return upsilon * L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
-def M_power(R, rho0, gamma_tot, dist, r0=1, **kwargs):
-    """Power law density profile, rho = rho0 (r / r0) ^ -gamma_tot
-    r0 is fixed to 1 kpc
+def M_power(r, rho0, gamma_tot, dist, r0=1, **kwargs):
+    r"""Power law density profile.
+
+    :math:`\rho = \rho_0 (r / r_0) ^{-\gamma_\mathrm{tot}}`
+
+    .. note::
+
+        :math:`r_0` must be fixed since it is degenerate with :math:`\rho_0`.
+
+    Parameters
+    ----------
+    r : float or array_like
+        Deprojected radius in arcsec
+    rho0 : float
+        density at r0, in Msun / kpc^3
+    gamma_tot : float
+        negative of the total mass density log-slope
+    dist : float
+        Distance in kpc
+    r0 : float, optional
+        scale radius in kpc, defaults to 1 kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed Mass within deprojected radius `r`
+
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    r = R * kpc_per_arcsec
+    r = r * kpc_per_arcsec
     return 4 * np.pi * rho0 * r0**3 / (3 - gamma_tot) * (r / r0)**(
         3 - gamma_tot)
-
-
-def M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s, dist,
-                       **kwargs):
-    """gNFW halo with contant M/L and Sersic luminosity profile
-    R is in arcsec, converted to kpc with dist (in kpc)
-    """
-    return M_gNFW(R, r_s, rho_s, gamma, dist) + M_sersic(
-        R, upsilon, I0_s, Re_s, n_s, dist)
-
-
-def M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist, **kwargs):
-    """gNFW halo with Sersic mass stellar mass profile from variable IMF
-    Here the sersic profile must be a mass surface density, not a luminosity
-    profile.
-    R is in arcsec, converted to kpc with dist (in kpc)
-    """
-    return M_gNFW(R, r_s, rho_s, gamma, dist) + L_sersic(
-        R, I0_s, Re_s, n_s, dist)
-
-
-# def M_NFW_constant_ML(R, M200, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
-#     return M_NFW(R, M200, dist) + upsilon * L_sersic(R, I0_s, Re_s, n_s, dist)
-
-
-# def M_NFW_variable_ML(R, M200, I0_s, Re_s, n_s, dist, **kwargs):
-#     return M_NFW(R, M200, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
-
-
-def M_gNFW_dm_variable_ML(R, M200, gamma, I0_s, Re_s, n_s, dist, **kwargs):
-    return M_gNFW_dm(R, M200, gamma, dist) + L_sersic(R, I0_s, Re_s, n_s, dist)
-
-
-def M_gNFW200_constant_ML(R, M200, c200, gamma, upsilon, I0_s, Re_s, n_s, dist,
-                          **kwargs):
-    """gNFW halo with contant M/L and Sersic luminosity profile
-    R is in arcsec, converted to kpc with dist (in kpc)
-    """
-    return M_gNFW200(R, M200, c200, gamma, dist) + M_sersic(
-        R, upsilon, I0_s, Re_s, n_s, dist)
-
-
-def M_gNFW200_variable_ML(R, M200, c200, gamma, I0_s, Re_s, n_s, dist,
-                          **kwargs):
-    """gNFW halo with Sersic mass stellar mass profile from variable IMF
-    Here the sersic profile must be a mass surface density, not a luminosity
-    profile.
-    R is in arcsec, converted to kpc with dist (in kpc)
-    """
-    return M_gNFW200(R, M200, c200, gamma, dist) + L_sersic(
-        R, I0_s, Re_s, n_s, dist)
-
-
-def M_gNFW_variable_ML_bh(R, M_bh, r_s, rho_s, gamma, I0_s, Re_s, n_s, dist,
-                          **kwargs):
-    return M_bh + M_gNFW_variable_ML(R, r_s, rho_s, gamma, I0_s, Re_s, n_s,
-                                     dist, **kwargs)
-
-
-def M_gNFW_constant_ML_bh(R, M_bh, r_s, rho_s, gamma, upsilon, I0_s, Re_s, n_s,
-                          dist, **kwargs):
-    return M_bh + M_gNFW_constant_ML(R, r_s, rho_s, gamma, upsilon, I0_s, Re_s,
-                                     n_s, dist, **kwargs)

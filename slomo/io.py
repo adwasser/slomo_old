@@ -26,7 +26,14 @@ warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
 
 
 def _version_string():
-    """Get the git checksum or version number."""
+    """Get the git checksum or version number.
+
+    Returns
+    -------
+    version : str
+        If in development version, this is the git checksum.  Else, this should
+        be the release version of the code.
+    """
     cwd = os.getcwd()
     topdir = os.path.join(__path__[0], "..")
     os.chdir(topdir)
@@ -45,8 +52,18 @@ def _version_string():
 
 
 def read_yaml(filename):
-    """Read in the config file and construct a model to run.  
-    Spaghetti code not even a parent could love.
+    """Read in the config file and construct a dictionary from which to create
+    a model.
+    
+    Parameters
+    ----------
+    filename : str
+        YAML config filename
+
+    Returns
+    -------
+    config : dict
+         dictionary used to create a DynamicalModel
     """
 
     tracer_modules = {
@@ -141,10 +158,16 @@ def read_yaml(filename):
 
 def create_file(hdf5_file, model, nwalkers=None, clobber=False):
     """Create a new hdf5 output file.
-    hdf5_file : filename
-    model : DynamicalModel object
-    nwalkers : int, optional, if None then default to 10 x the number of free params
-    clobber : bool, optional, if False, don't overwrite exisiting file
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    model : DynamicalModel
+    nwalkers : int, optional
+        if None then default to 10 x the number of free params
+    clobber : bool, optional
+        if False, don't overwrite exisiting file
     """
     if clobber:
         mode = "w"
@@ -169,17 +192,29 @@ def create_file(hdf5_file, model, nwalkers=None, clobber=False):
 
 
 def read_model(hdf5_file):
+    """Read a model file and return the DynamicalModel.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+
+    Returns
+    -------
+    DynamicalModel
+        instance of slomo.models.DynamicalModel
+    """
     with h5py.File(hdf5_file, "r") as f:
         return pickle.loads(f['model'].value.tostring())
 
-    
+
 def check_model(hdf5_file):
     """Ensure that the model file will sample.
 
     Parameters
     ----------
     hdf5_file: str
-               The name of the model file.
+        hdf5 filename
     """
     model = read_model(hdf5_file)
     initial_values = model.params._values
@@ -187,16 +222,42 @@ def check_model(hdf5_file):
     lnp = model(initial_values)
     end = time.time()
     print("Model successfully sampled in {:.2f} s".format(end - start))
-    
+
 
 def read_dataset(hdf5_file, path):
-    """Return a stored dataset at the specified path"""
+    """Return a stored dataset at the specified path.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    path : str
+        hdf5 style pathname, e.g., "settings/nwalkers"
+
+    Returns
+    -------
+    dataset : any
+        The dataset stored at `path`
+    """
     with h5py.File(hdf5_file, "r") as f:
         return f[path].value
 
 
 def write_group(hdf5_file, group, path=""):
-    """Write the group dictionary to the path on the hdf5 file"""
+    """Write the group dictionary to the path on the hdf5 file.
+
+    Keys of the dictionary `group` will be new paths in the hdf5 file.
+    This will recursively write to the file for nested dictionaries.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    group : dict
+        dictionary to store at `path`
+    path : str, optional
+        hdf5 style pathname, e.g., "settings/nwalkers"
+    """
     with h5py.File(hdf5_file) as f:
         for key, value in group.items():
             new_path = "/".join([path, key])
@@ -207,7 +268,20 @@ def write_group(hdf5_file, group, path=""):
 
 
 def read_group(hdf5_file, path):
-    """Return a group at the specified path as a dictionary"""
+    """Return a group at the specified path as a dictionary.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    path : str
+        hdf5 style pathname, e.g., "settings"
+
+    Returns
+    -------
+    group : dict
+        Dictionary located at `path`
+    """
     group = {}
     with h5py.File(hdf5_file, "r") as f:
         for key, value in f[path].items():
@@ -221,7 +295,15 @@ def read_group(hdf5_file, path):
 
 
 def append_to_chain(hdf5_file, walkers):
-    """Walkers have shape (nwalkers, ndim)"""
+    """Add the provided walker positions to the existing chain.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    walkers : array_like
+       array of walker positions of shape (nwalkers, ndim).
+    """
     with h5py.File(hdf5_file) as f:
         chain = f["chain"]
         chain.resize((chain.shape[0], chain.shape[1] + 1, chain.shape[2]))
@@ -230,11 +312,30 @@ def append_to_chain(hdf5_file, walkers):
 
 
 def chain_shape(hdf5_file):
+    """Shortcut for fetching the shape of the chain.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+
+    Returns
+    -------
+    shape : tuple
+        3-tuple of ints representing (nwalkers, niterations, ndim)
+    """
     with h5py.File(hdf5_file) as f:
         chain = f["chain"]
         return chain.shape
 
 
 def visit(hdf5_file):
+    """Recursively visit and print all hdf5 groups.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    """
     with h5py.File(hdf5_file) as f:
         f.visititems(lambda key, value: print(key, value))
