@@ -9,6 +9,23 @@ from .parameters import Parameter
 
 
 class DynamicalModel:
+    """Complete description of the dynamical model, including measurement
+    model, data, and priors.
+    
+    Parameters
+    ----------
+    params : ParamDict
+    constants : dict
+        Mapping of variable names to fixed values
+    tracers : OrderedDict
+        Contains Tracer instances
+    mass_model : MassModel
+        Functions for enclosed mass
+    measurements : OrderedDict
+        Contains Measurement instances
+    settings : dict
+        Other keyword arguments to store for posterity
+    """
     def __init__(self,
                  params,
                  constants,
@@ -17,18 +34,6 @@ class DynamicalModel:
                  measurements,
                  weight_max=10,
                  **settings):
-        """Complete description of the dynamical model, including measurement
-        model, data, and priors.
-
-        Parameters
-        ----------
-        params : ParamDict object, as instantiated from config file
-        constants : dictionary mapping variable names to fixed values
-        tracers : OrderedDict of Tracer objects
-        mass_model : MassModel instance, function for enclosed mass
-        measurements : OrderedDict of Measurement objects
-        settings : other keyword arguments to store for posterity
-        """
         self.params = params
         self.constants = constants if constants is not None else {}
         self.tracers = tracers
@@ -51,10 +56,35 @@ class DynamicalModel:
                               len(self.mass_model), len(self.tracers))
 
     def construct_kwargs(self, param_values):
+        """Takes a list of parameter values and returns a mapping of names to
+        values.
+
+        Parameters
+        ----------
+        param_values : iterable
+        
+        Returns
+        -------
+        dict
+            names (str) -> values (float)
+        """
         return {**self.constants, **self.params.mapping(param_values)}
 
     def __call__(self, param_values):
-        """Log of the posterior probability"""
+        """Log of the posterior probability.
+        
+        Parameters
+        ----------
+        param_values : list
+            list of parameter values (floats) in the order taken from the params
+            OrderedDict
+
+        Returns
+        -------
+        float
+            Log of the posterior probability at the specified point in parameter
+            space.
+        """
 
         kwargs = self.construct_kwargs(param_values)
 
@@ -76,24 +106,49 @@ class DynamicalModel:
 
 
 class MassModel(OrderedDict):
-    """Multi-component mass model, names index functions"""
+    """Multi-component mass model.
+
+    Parameters
+    ----------
+    components : iterable
+        Sequence of (key, function) tuples where function refers to a mapping of
+        r (in arcsec), \*\*kwargs -> M (in Msun)
+    """
 
     def __call__(self, radii, **kwargs):
+        """Calculate the enclosed mass of all components.
+
+        Parameters
+        ----------
+        radii : float or array_like
+            radii (in arcsec) at which to compute the mass
+        kwargs : dict
+            mapping of names (str) -> values (float)
+
+        Returns
+        -------
+        float or array_like
+            Enclosed mass in Msun
+        """
         return sum([M(radii, **kwargs) for M in self.values()])
 
 
 class Tracer:
+    """A dynamical tracer.  It shows some potential...
+    
+    Parameters
+    ----------
+    name : str
+        name of tracer, to be referenced by likelihood model
+    anisotropy : function
+        Jeans kernel, (r, R) -> K(r, R, \*\*kwargs)
+    surface_density : function
+        R -> I(R, \*\*kwargs)
+    volume_density : function
+        r -> nu(r, \*\*kwargs)
+    """
     def __init__(self, name, anisotropy, surface_density, volume_density,
                  mass_model):
-        """A dynamical tracer.  It shows some potential...
-
-        Parameters
-        ----------
-        name : str, name of tracer, to be referenced by likelihood model
-        anisotropy : Jeans kernel, (r, R) -> K(r, R, **kwargs)
-        surface_density : R -> I(R, **kwargs)
-        volume_density : r -> nu(r, **kwargs)
-        """
         self.name = name
         self.anisotropy = anisotropy
         self.volume_density = volume_density
@@ -108,12 +163,15 @@ class Tracer:
 
         Parameters
         ----------
-        radii : array of projected radii, in arcsec
-        kwargs : keyword arguments for all functions
+        radii : float or array_like
+            projected radii, in arcsec
+        kwargs : dict
+            keyword arguments for all functions
 
         Returns
         -------
-        sigma : velocity dispersion array in km/s
+        sigma : float
+            velocity dispersion array in km/s
         """
         M = lambda r: self.mass_model(r, **kwargs)
         K = lambda r, R: self.anisotropy(r, R, **kwargs)
@@ -123,17 +181,22 @@ class Tracer:
 
 
 class Measurement:
-    def __init__(self, name, likelihood, model, observables, weight=False):
-        """Likelihood function with data.
+    """Likelihood function with data.
 
-        Parameters
-        ----------
-        name : str, name of dataset
-        likelihood : (sigma_jeans, *data, **kwargs) -> L(sigma_jeans, *data, *kwargs)
-        model : list of [f(R, **kwargs) -> observable]
-        observables : dict with keys of R, (sigma, dsigma) | (v, dv), [c, dc] | I
-        weight : if True, associate with a weight parameter for the joint likelihood
-        """
+    Parameters
+    ----------
+    name : str
+        name of dataset
+    likelihood : function
+        (sigma_jeans, \*data, \*\*kwargs) -> L(sigma_jeans, \*data, \*kwargs)
+    model : list
+        sequence of model functions, f(R, \*\*kwargs) -> observable
+    observables : dict
+        has keys of R, (sigma, dsigma) | (v, dv), [c, dc] | I
+    weight : bool
+        if True, associate with a weight parameter for the joint likelihood
+    """
+    def __init__(self, name, likelihood, model, observables, weight=False):
         self.name = name
         self.likelihood = likelihood
         self.model = model
@@ -149,11 +212,13 @@ class Measurement:
 
         Parameters
         ----------
-        kwargs : keyword arguments for all functions
+        kwargs : dict
+            keyword arguments for all functions
 
         Returns
         -------
-        ll : log likelihood, in (-inf, 0)
+        ll : float
+            log likelihood, in (-inf, 0)
         """
         try:
             weight = np.sqrt(kwargs["alpha_" + self.name])
