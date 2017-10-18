@@ -1,7 +1,9 @@
-"""Miscellanea"""
+"""Miscellanea
+
+Specifies physical constants.
+"""
 
 import inspect
-from collections import OrderedDict
 
 import numpy as np
 from astropy import constants as c

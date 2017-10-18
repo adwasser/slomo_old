@@ -1,25 +1,50 @@
 from collections import OrderedDict
 
 
-def identity(x):
+def _identity(x):
+    """A silly way of setting a default transform."""
     return x
 
 
 class Parameter:
+    """Model parameter.
+
+    This class keeps track of priors for parameters and parameter transforms.
+    The idea is that the sampler wants to keeps track of parameters in some
+    coordinate space (e.g., the log of a scale parameter), while the dynamical
+    model wants to see physical values.  The transform function will map values
+    from the sampled space to the physical space.
+
+    Parameters
+    ----------
+    name : str
+        name of parameter
+    value : float
+        numeric value, the initial value
+    lnprior : function
+        x, \*args -> log prior probability of x
+    lnprior_args : list, optional
+        arguments for log prior probability function
+    transform : function, optional
+        sampled parameter -> physical parameter
+
+    Attributes
+    ----------
+    value : float
+        if fetched, it will be in physical space
+        if set, it will be as the sampled space
+
+    Methods
+    -------
+    lnprior(value)
+        Return the value of the log prior at the given point
+    """
     def __init__(self,
                  name,
                  value,
                  lnprior,
                  lnprior_args=None,
-                 transform=identity):
-        """Model parameter object
-
-        name : str, name of parameter
-        value : float, numeric value, if free param then it is the initial value
-        lnprior : function x, *args -> log prior probability of x
-        lnprior_args : list of arguments for log prior probability function
-        transform : function x -> transformed parameter
-        """
+                 transform=_identity):
         self.name = name
         # parameter value as seen by sampler
         self._value = value
@@ -48,7 +73,21 @@ class Parameter:
 
 class ParamDict(OrderedDict):
     """OrderedDict of Parameter objects
-    TODO: enforce all entries being Parameter objects at init and setitem.
+
+    Attributes
+    ----------
+    names : list
+        list of parameter names (as str)
+
+    Methods
+    -------
+    lnprior(values)
+        Map a list of values to the sum of the log priors of each parameter.
+    mapping(values)
+        Create a dictionary mapping the parameter name to the physical value.
+    index(name)
+        Return an integer giving the index of the parameter with the specified
+        name.
     """
 
     @property

@@ -1,6 +1,5 @@
 """Nefarious plotting"""
 from itertools import cycle
-import dill as pickle
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -9,8 +8,16 @@ from emcee.autocorr import function as autocorr_function
 from emcee.autocorr import integrated_time
 from corner import corner
 
-from .utils import get_params, radians_per_arcsec, G
-from . import mass, io
+from .utils import radians_per_arcsec, G
+from . import io
+
+__all__ = [
+    "walker_plot",
+    "autocorr_plot",
+    "corner_plot",
+    "component_plot"
+]
+
 
 label_map = {
     "r_s": r"$\log_{10} r_s$",
@@ -58,7 +65,21 @@ corner_kwargs = {
 
 
 def walker_plot(outfile, skip_step=100):
-    """Does the walker choose the path or does the path choose the walker?"""
+    """Does the walker choose the path or does the path choose the walker?
+    
+    Parameters
+    ----------
+    outfile : str
+        hdf5 file name
+    skip_step : int, optional
+        number of steps to skip between iterations to save on compute time
+    
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    axarr : ndarray
+        2d array of matplotlib.axes._subplots.AxesSubplot instances
+    """
     chain = io.read_dataset(outfile, "chain")
     model = io.read_model(outfile)
 
@@ -107,7 +128,23 @@ def walker_plot(outfile, skip_step=100):
 
 
 def autocorr_plot(outfile, skip_step=100, **kwargs):
-    """0 is good, 1 is bad"""
+    """Autocorrelation plots.
+    0 is good, 1 is bad
+    extra keyword arguments get passed into emcee.autocorr.intergrated_time
+    
+    Parameters
+    ----------
+    outfile : str
+        hdf5 file name
+    skip_step : int, optional
+        number of steps to skip to thin the flattened chain
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    axarr : ndarray
+        2d array of matplotlib.axes._subplots.AxesSubplot instances
+    """
     chain = io.read_dataset(outfile, "chain")
     model = io.read_model(outfile)
     nwalkers, niterations, ndim = chain.shape
@@ -167,7 +204,23 @@ def autocorr_plot(outfile, skip_step=100, **kwargs):
 
 
 def corner_plot(outfile, burn_fraction=0.5, **kwargs):
-    """Make an enormous corner plot, rejecting the burn-in iterations at the start."""
+    """Make an enormous corner plot, rejecting the burn-in iterations at the 
+    start.
+
+    You should at very least visually examine the walker plots to determine
+    how much of the chain should be rejected.
+
+    Parameters
+    ----------
+    outfile : str
+        hdf5 file name
+    burn_fraction : float, optional
+        fraction of the chain to reject
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
     chain = io.read_dataset(outfile, "chain")
     model = io.read_model(outfile)
     nwalkers, niterations, ndim = chain.shape
@@ -194,12 +247,29 @@ def component_plot(outfile,
                    size=50,
                    **fig_kwargs):
     """Plot mass components and total mass.
-    outfile : str, path to hdf5 file
-    burn_fraction : float in (0, 1), fraction of chain to discard
-    rmin : float, arcsec, minimum radius
-    rmax : float arcsec, maximum radius
-    nsamples : int, number of subsamples of chain
-    size : int, number of radial points on grid
+    
+    Parameters
+    ----------
+    outfile : str
+        path to hdf5 file
+    burn_fraction : float 
+        in (0, 1), fraction of chain to discard
+    rmin : float, optional
+        arcsec, minimum radius
+    rmax : float, optional
+        arcsec, maximum radius
+    nsamples : int, optional
+        number of subsamples of chain
+    size : int, optional
+        number of radial points on grid
+    fig_kwargs
+        keywords passed to pyplot.subplots
+    
+     Returns
+    -------
+    fig : matplotlib.figure.Figure
+    axes : tuple
+        2-tuple of matplotlib.axes._subplots.AxesSubplot instances
     """
     chain = io.read_dataset(outfile, "chain")
     model = io.read_model(outfile)
@@ -268,146 +338,3 @@ def component_plot(outfile,
     ax1.set_xlabel('R  [arcsec]')
     return fig, (ax0, ax1)
 
-
-def mass_plot(outfile,
-              burn_fraction=0.5,
-              rmin=1,
-              rmax=1000,
-              nsamples=10000,
-              size=50):
-    """
-    Plot mass components and total mass.
-    outfile : str, path to hdf5 file
-    burn_fraction : float in (0, 1), fraction of chain to discard
-    rmin : float, arcsec, minimum radius
-    rmax : float arcsec, maximum radius
-    nsamples : int, number of subsamples of chain
-    size : int, number of radial points on grid
-    """
-    chain = io.read_dataset(outfile, "chain")
-    model = io.read_model(outfile)
-    mass_model = model.mass_model
-    nwalkers, niterations, ndim = chain.shape
-    assert ndim == len(model.params)
-    keep = round(niterations * burn_fraction)
-    samples = chain[:, keep:, :].reshape((-1, ndim))
-
-    # construct profiles for each mass component
-    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
-    radii = np.logspace(np.log10(rmin), np.log10(rmax), size)
-    profiles = np.zeros((len(mass_model), nsamples, size))
-    for i, param_values in enumerate(samples[idx]):
-        param_map = model.params.mapping(param_values)
-        kwargs = {**param_map, **model.constants}
-        for j, (name, mass_component) in enumerate(mass_model.items()):
-            profiles[j][i] = mass_component(radii, **kwargs)
-
-    color = cycle(["C" + str(i) for i in range(6)])
-    style = cycle(["--", "-.", ":"])
-    label_map = {
-        "dm": r"M$_\mathrm{dm}$",
-        "st": r"M$_*$",
-        "bh": r"M$_\mathrm{bh}$"
-    }
-    fig, ax = plt.subplots()
-    for i, (name, mass_component) in enumerate(mass_model.items()):
-        M_low, M_med, M_high = np.percentile(profiles[i], [16, 50, 84], axis=0)
-        c = next(color)
-        s = next(style)
-        try:
-            label = label_map[name]
-        except KeyError:
-            label = name
-        ax.plot(radii, M_med, c + s, label=label)
-        ax.fill_between(radii, M_low, M_high, facecolor=c, alpha=0.3)
-    # total mass profile
-    M_low, M_med, M_high = np.percentile(
-        np.sum(profiles, axis=0), [16, 50, 84], axis=0)
-    ax.plot(radii, M_med, 'k-', label=r"M$_\mathrm{tot}$")
-    ax.fill_between(radii, M_low, M_high, facecolor='k', alpha=0.3)
-
-    ax.legend(loc="best")
-    ax.set_xlim(radii.min(), radii.max())
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('R  [arcsec]')
-    ax.set_ylabel(r'M(<R)  [M$_\odot$]')
-    return fig, ax
-
-
-def vc_plot(outfile,
-            burn_fraction=0.5,
-            rmin=1,
-            rmax=1000,
-            nsamples=10000,
-            size=50):
-    """
-    Plot circular velocity components.
-    outfile : str, path to hdf5 file
-    burn_fraction : float in (0, 1), fraction of chain to discard
-    rmin : float, arcsec, minimum radius
-    rmax : float arcsec, maximum radius
-    nsamples : int, number of subsamples of chain
-    size : int, number of radial points on grid
-    """
-    chain = io.read_dataset(outfile, "chain")
-    model = io.read_model(outfile)
-    mass_model = model.mass_model
-    nwalkers, niterations, ndim = chain.shape
-    assert ndim == len(model.params)
-    keep = round(niterations * burn_fraction)
-    samples = chain[:, keep:, :].reshape((-1, ndim))
-
-    # construct profiles for each mass component
-    idx = np.random.choice(np.arange(samples.shape[0]), nsamples)
-    radii = np.logspace(np.log10(rmin), np.log10(rmax), size)
-    profiles = np.zeros((len(mass_model), nsamples, size))
-    distances = np.empty(nsamples)
-    for i, param_values in enumerate(samples[idx]):
-        param_map = model.params.mapping(param_values)
-        kwargs = {**param_map, **model.constants}
-        for j, (name, mass_component) in enumerate(mass_model.items()):
-            profiles[j][i] = mass_component(radii, **kwargs)
-        distances[i] = kwargs['dist']
-    color = cycle(["C" + str(i) for i in range(6)])
-    style = cycle(["--", "-.", ":"])
-    label_map = {
-        "dm": r"$v_\mathrm{dm}$",
-        "st": r"$v_*$",
-        "bh": r"$v_\mathrm{bh}$"
-    }
-    fig, ax = plt.subplots()
-    for i, (name, mass_component) in enumerate(mass_model.items()):
-        M_low, M_med, M_high = np.percentile(profiles[i], [16, 50, 84], axis=0)
-        c = next(color)
-        s = next(style)
-        try:
-            label = label_map[name]
-        except KeyError:
-            label = name
-        kpc_per_arcsec = distances[i] * radians_per_arcsec
-        kpc = kpc_per_arcsec * radii
-        vc_med = np.sqrt(G * M_med / kpc)
-        vc_low = np.sqrt(G * M_low / kpc)
-        vc_high = np.sqrt(G * M_high / kpc)
-        ax.plot(radii, vc_med, c + s, label=label)
-        ax.fill_between(radii, vc_low, vc_high, facecolor=c, alpha=0.3)
-    # total mass profile
-    M_low, M_med, M_high = np.percentile(
-        np.sum(profiles, axis=0), [16, 50, 84], axis=0)
-    kpc_per_arcsec = np.median(distances) * radians_per_arcsec
-    kpc = kpc_per_arcsec * radii
-    vc_med = np.sqrt(G * M_med / kpc)
-    vc_low = np.sqrt(G * M_low / kpc)
-    vc_high = np.sqrt(G * M_high / kpc)
-
-    ax.plot(radii, vc_med, 'k-', label=r"$v_\mathrm{tot}$")
-    ax.fill_between(radii, vc_low, vc_high, facecolor='k', alpha=0.3)
-
-    ax.legend(loc="best")
-    ax.set_xlim(radii.min(), radii.max())
-    ax.set_xscale('log')
-    # ax.set_yscale('log')
-    ax.set_xlabel('R  [arcsec]')
-    ax.set_ylabel(r'$v_\mathrm{circ}$  [km s$^{-1}$]')
-    return fig, ax

@@ -1,7 +1,11 @@
-"""Density profiles
+"""Surface density profiles.
+
 All functions with distances use "R" to refer to a projected length on the sky,
-and "r" to refer to the de-projected distance from the galaxy center.  
-All lengths are physical (i.e., they are actual distances, not angle subtended on the sky)
+and "r" to refer to the de-projected distance from the galaxy center.
+
+Functions which depend on distance will take radii as angle subtended on the
+sky (e.g., in arcsec) and convert them to physical radii (e.g., kpc) at the
+specified distance.
 """
 
 import numpy as np
@@ -9,22 +13,49 @@ from scipy import special
 
 from .utils import radians_per_arcsec
 
+__all__ = [
+    "b_cb",
+    "I_sersic",
+    "I_nuker"
+]
 
 def b_cb(n):
-    """'b' parameter in the Sersic function, from the Ciotti & Bertin (1999) 
+    """'b' parameter in the Sersic function, from the Ciotti & Bertin (1999)
     approximation.
+
+    Parameters
+    ----------
+    n : float
+        Sersic index
+    
+    Returns
+    -------
+    float
     """
     return -1. / 3 + 2. * n + 4 / (405. * n) + 46 / (25515. * n**2)
 
 
 def I_nuker(R, Ib, Rb, alpha, beta, gamma):
     """Double power law density profile.
-    R is projected radius.
-    Ib is intensity at the break radius.
-    Rb is the break radius.
-    alpha is the transition strength (gradual -> sharp)
-    beta is the outer power law index.
-    gamma is the inner power law index.
+    
+    Parameters
+    ----------
+    R : float or array_like
+        projected radius in kpc
+    Ib : float
+        intensity at the break radius.
+    Rb : float
+        the break radius in kpc
+    alpha : float
+        the transition strength (gradual -> sharp)
+    beta : float
+        the outer power law index.
+    gamma : float
+        the inner power law index.
+
+    Returns
+    -------
+    float or array_like
     """
     I = Ib * 2**((beta - gamma) / alpha) * (R / Rb)**(-gamma) * (
         1 + (R / Rb)**alpha)**((gamma - beta) / alpha)
@@ -33,11 +64,23 @@ def I_nuker(R, Ib, Rb, alpha, beta, gamma):
 
 def I_sersic(R, I0, Re, n, dist):
     """Sersic surface brightness profile.
-    R is the projected radius, in arcsec, at which to evaluate the function.
-    I0 is the central brightness, in Lsun kpc^-2
-    Re is the effective radius (at which half the luminosity is enclosed), in arcsec
-    n is the Sersic index.
-    dist is the distance in kpc
+
+    Parameters
+    ----------
+    R : float or array_like
+        the projected radius, in arcsec
+    I0 : float
+        the central brightness, in Lsun kpc^-2
+    Re : float
+        the effective radius (at which half the luminosity is enclosed), in arcsec
+    n : float
+        the Sersic index.
+    dist : float
+        the distance in kpc
+    
+    Returns
+    -------
+    float or array_like
     """
     # distance dependent conversions
     kpc_per_arcsec = dist * radians_per_arcsec
@@ -60,15 +103,21 @@ def I_sersic_r(R, I0_r, Re_r, n_r, dist, **kwargs):
 
 
 def mu_sersic(R, mu_eff, Re, n):
+    """Sersic surface brightness in magnitudes per square arcsec.
+
+    Parameters
+    ----------
+    R : float or array_like
+        the projected radius, in arcsec
+    mu_eff : float
+        the surface brightness at the effective radius, in mag/arcsec2
+    Re : float
+        the effective radius (at which half the luminosity is enclosed), in arcsec
+    n : float
+        the Sersic index.
+
+    Returns
+    -------
+    float or array_like
+    """
     return mu_eff + 2.5 * b_cb(n) / np.log(10) * ((R / Re)**(1 / n) - 1)
-
-
-def mu_eff_sersic(mtot, Re, n):
-    b = b_cb(n)
-    return mtot + 5 * np.log(Re) + 2.5 * np.log(
-        2 * np.pi * n * np.exp(b) * special.gamma(2 * n) / b**(2 * n))
-
-
-def mu0_sersic(mtot, Re, n):
-    mu_eff = mu_eff_sersic(mtot, Re, n)
-    return mu_eff - 2.5 * b_cb(n) / np.log(10)

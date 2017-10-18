@@ -3,8 +3,6 @@
 API
 ===
 
-Here we indicate how to interact with ``slomo`` programmatically through python. 
-
 Submodules
 ----------
 
@@ -15,7 +13,6 @@ Submodules
    submodules/jeans
    submodules/likelihood
    submodules/mass
-   submodules/mock
    submodules/models
    submodules/parameters
    submodules/pdf

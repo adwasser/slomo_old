@@ -1,7 +1,11 @@
-"""Density profiles
+"""Volume density profiles
+
 All functions with distances use "R" to refer to a projected length on the sky,
-and "r" to refer to the de-projected distance from the galaxy center.  
-All lengths are physical (i.e., they are actual distances, not angle subtended on the sky)
+and "r" to refer to the de-projected distance from the galaxy center.
+
+Functions which depend on distance will take radii as angle subtended on the
+sky (e.g., in arcsec) and convert them to physical radii (e.g., kpc) at the
+specified distance.
 """
 
 import numpy as np
@@ -11,10 +15,26 @@ from scipy.integrate import quad
 from .utils import radians_per_arcsec
 from .surface_density import b_cb
 
+__all__ = [
+    "p_ln",
+    "nu_sersic",
+    "L_sersic",
+    "L_sersic_tot"
+]
+
 
 def p_ln(n):
-    """'p' parameter in fitting deprojected Sersic function, 
+    """'p' parameter in fitting deprojected Sersic function,
     from Lima Neto et al. (1999)
+
+    Parameters
+    ----------
+    n : float
+        Sersic index
+
+    Returns
+    -------
+    float
     """
     return 1. - 0.6097 / n + 0.05463 / n**2
 
@@ -22,11 +42,23 @@ def p_ln(n):
 def nu_sersic(r, I0, Re, n, dist):
     """Sersic deprojected (3D) brightness profile approximation from
     Lima Neto et al. (1999)
-    r is the deprojected radius (in arcsec) at which to evaluate the function
-    I0 is the central brightness, in Lsun kpc^-2
-    Re is the effective radius (at which half the luminosity is enclosed), in arcsec
-    n is the Sersic index.
-    dist is the distance in kpc
+
+    Parameters
+    ----------
+    r : float or array_like
+        the deprojected radius, in arcsec
+    I0 : float
+        the central brightness, in Lsun kpc^-2
+    Re : float
+        the effective radius (at which half the luminosity is enclosed), in arcsec
+    n : float
+        the Sersic index.
+    dist : float
+        the distance in kpc
+    
+    Returns
+    -------
+    float or array_like
     """
     # distance dependent conversions
     kpc_per_arcsec = dist * radians_per_arcsec
@@ -55,9 +87,19 @@ def nu_sersic_r(r, I0_r, Re_r, n_r, dist, **kwargs):
 
 def nu_integral(r, dIdR):
     """Deprojected density profile.
-    r is the deprojected radius, 
-    dIdR is the derivative of surface brightness with respect to projected 
-    radius, a function of R.
+
+    A sanity check for the approximated deprojection.
+    
+    Parameters
+    ----------
+    r : float or array_like
+        the deprojected radius
+    dIdR : function
+        R - > the derivative of surface brightness with respect to R
+
+    Returns
+    -------
+    float
     """
     integrand = lambda R, r: dIdR(R) / np.sqrt(R**2 - r**2)
     try:
@@ -65,7 +107,7 @@ def nu_integral(r, dIdR):
     except TypeError as e:
         # R is not iterable
         args = (r, )
-        integral = quad(integrand, R, np.inf, args=args)[0]
+        integral = quad(integrand, r, np.inf, args=args)[0]
     else:
         integral = np.empty(size)
         integral[:] = np.nan
@@ -77,9 +119,22 @@ def nu_integral(r, dIdR):
 
 def L_sersic_tot(I0, Re, n):
     """Total luminosity of Sersic fit.
-    I0 is the central brightness.
-    Re is the effective radius (at which half the luminosity is enclosed).
-    n is the Sersic index.
+
+    Parameters
+    ----------
+    I0 : float
+        the central brightness, in Lsun kpc^-2
+    Re : float
+        the effective radius (at which half the luminosity is enclosed)
+        in arcsec
+    n : float
+        the Sersic index.
+    dist : float
+        the distance in kpc
+
+    Returns
+    -------
+    float
     """
     L = 2 * np.pi * n * Re**2 * I0 * special.gamma(2 * n) * b_cb(n)**(-2 * n)
     return L
@@ -88,7 +143,26 @@ def L_sersic_tot(I0, Re, n):
 def L_sersic(r, I0, Re, n):
     """Luminosity within deprojected radius r (from Lima Neto+1999).
     Note that this is NOT the same as the Graham & Driver 2005, eqn 2,
-    which is for the projected radius, and thus includes more flux in the inner regions.
+    which is for the projected radius, and thus includes more flux in the inner
+    regions.
+
+    Parameters
+    ----------
+    r : float or array_like
+        the projected radius, in arcsec
+    I0 : float
+        the central brightness, in Lsun kpc^-2
+    Re : float
+        the effective radius (at which half the luminosity is enclosed)
+        in arcsec
+    n : float
+        the Sersic index.
+    dist : float
+        the distance in kpc
+
+    Returns
+    -------
+    float or array_like
     """
     p = p_ln(n)
     b = b_cb(n)
@@ -101,9 +175,24 @@ def L_sersic(r, I0, Re, n):
 
 def L_R_sersic(R, I0, Re, n):
     """Sersic enclosed (<R) luminosity profile from Graham & Driver 2005
-    I0 is the central brightness.
-    Re is the effective radius (at which half the luminosity is enclosed).
-    n is the Sersic index.
+
+    Parameters
+    ----------
+    R : float or array_like
+        the projected radius, in arcsec
+    I0 : float
+        the central brightness, in Lsun kpc^-2
+    Re : float
+        the effective radius (at which half the luminosity is enclosed)
+        in arcsec
+    n : float
+        the Sersic index.
+    dist : float
+        the distance in kpc
+
+    Returns
+    -------
+    float or array_like
     """
     b = b_cb(n)
     x = b * (R / Re)**(1 / n)
@@ -113,11 +202,14 @@ def L_R_sersic(R, I0, Re, n):
 
 def L_from_mag(m, M_sun, dist):
     """Gives the luminosity for a given flux at a given distance, in solar units.
-    
+
     Parameters
     ----------
-    m: apparent magnitude
-    M_sun: absolute magnitude of the sun at the measured photometric band
-    dist: distance to object in kpc.
+    m: float
+        apparent magnitude
+    M_sun: float
+        absolute magnitude of the sun at the measured photometric band
+    dist: float
+        distance to object in kpc.
     """
     return 10**((M_sun - m) / 2.5 + 4) * dist**2

@@ -9,13 +9,17 @@ def lnuniform(value, lower, upper):
 
     Parameters
     ----------
-    value : float, random variable
-    lower : float, lower bound
-    upper : float, upper bound
+    value : float
+        random variable
+    lower : float
+        lower bound
+    upper : float
+        upper bound
 
     Returns
     -------
-    lnp : float in (-inf, 0)
+    float
+        in the range (-inf, 0)
     """
     if lower < value < upper:
         return 0
@@ -27,13 +31,17 @@ def lnbeta(x, alpha, beta):
 
     Parameters
     ----------
-    x : float, random variable in (0, 1)
-    alpha : float, higher if more weight in low values
-    beta : float, higher if more weight in high values
+    x : float or array_like
+        random variable in (0, 1)
+    alpha : float
+        higher if more weight in low values
+    beta : float
+        higher if more weight in high values
 
     Returns
     -------
-    lnlike : float in (-inf, 0)
+    float or array_like
+        in (-inf, 0)
     """
     term1 = (alpha - 1) * np.log(x)
     term2 = (beta - 1) * np.log(1 - x)
@@ -43,8 +51,17 @@ def lnbeta(x, alpha, beta):
 
 def lnexp(x, beta):
     """Log of an exponential distribution
-    x : float, random variable
-    beta : survival parameter, inverse of rate lambda
+    
+    Parameters
+    ----------
+    x : float
+        random variable
+    beta : float
+        survival parameter, inverse of rate lambda
+    
+    Returns
+    -------
+    float
     """
     if x < 0:
         return -np.inf
@@ -52,7 +69,21 @@ def lnexp(x, beta):
 
 
 def lnexp_truncated(x, beta, upper):
-    """Log of exponential distribution, truncated at upper limit"""
+    """Log of exponential distribution, truncated at upper limit.
+
+    Parameters
+    ----------
+    x : float
+        random variable
+    beta : float
+        survival parameter, inverse of rate lambda
+    upper : float
+        upper bound of distribution
+
+    Returns
+    -------
+    float
+    """
     if x > upper:
         return -np.inf
     return lnexp(x, beta)
@@ -63,13 +94,17 @@ def lngauss(x, mu, sigma):
 
     Parameters
     ----------
-    x : random variable
-    mu : mean
-    sigma : std
+    x : float or array_like
+        random variable
+    mu : float
+        mean
+    sigma : float
+        std
 
     Returns
     -------
-    lnlike : float in (-inf, 0)
+    float or array_like
+        in (-inf, 0)
     """
     chi2 = ((x - mu) / sigma)**2
     norm = np.log(2 * np.pi * sigma**2)
@@ -81,13 +116,21 @@ def lngauss_truncated(x, mu, sigma, lower, upper):
 
     Parameters
     ----------
-    x : random variable
-    mu : mean
-    sigma : std
+    x : float
+        random variable
+    mu : float
+        mean
+    sigma : float
+        std
+    lower : float
+        lower bound on distribution
+    upper : float
+        upper bound on distribution
 
     Returns
     -------
-    lnlike : float in (-inf, 0)
+    float
+        in (-inf, 0)
     """
     if x < lower or x > upper:
         return -np.inf
@@ -101,13 +144,16 @@ def lngauss_discrete(v, dv, sigma):
 
     Parameters
     ----------
-    v : measured value
-    dv : measurement uncertainty
-    sigma : predicted value for std of gaussian
+    v : float or array_like
+        measured value
+    dv : float or array_like
+        measurement uncertainty
+    sigma : float or array_like
+        predicted value for std of gaussian
     
     Returns
     -------
-    lnlike : float in (-inf, 0)
+    float or array_like
     """
     std = np.sqrt(sigma**2 + dv**2)
     return lngauss(v, 0, std)
