@@ -2,6 +2,10 @@
 
 Spherical Jeans modeling of slow-rotator galaxies with multiple tracer populations.
 
+https://slomo.readthedocs.io
+
+[![Documentation Status](https://readthedocs.org/projects/slomo/badge/?version=latest)](http://slomo.readthedocs.io/en/latest/?badge=latest)
+
 ## Dependencies
 
 * python >= 3.5
