@@ -19,17 +19,18 @@ Other dependencies listed below should be installed when installing with ``pip``
 * psutil
 
 
-Stable version
---------------
+pip
+---
 
 Using ``pip``:
 
 .. code-block:: none
-		
-   pip install slomo
 
-Latest version
---------------
+   pip install git+git://github.com/adwasser/slomo.git   
+
+
+Git
+---
 
 Using ``git``:
 
