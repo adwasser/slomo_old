@@ -53,7 +53,7 @@ def K_constant(r, R, beta):
     u = r / R
     factor = 0.5 * u**(2 * beta - 1)
     term1 = (1.5 - beta) * np.sqrt(np.pi) * \
-            special.gamma(beta - 0.5) / special.gamma(beta)
+        special.gamma(beta - 0.5) / special.gamma(beta)
     term2 = beta * beta_inc(beta + 0.5, 0.5, 1 / u**2)
     term3 = -beta_inc(beta - 0.5, 0.5, 1 / u**2)
     return factor * (term1 + term2 + term3)
@@ -100,9 +100,9 @@ def K_ML(r, R, r_a, **kwargs):
     u = r / R
     u_a = r_a / R
     if u_a < 1:
-        f = lambda u: np.arccos(u)
+        def f(u): return np.arccos(u)
     elif u_a > 1:
-        f = lambda u: np.arccosh(u)
+        def f(u): return np.arccosh(u)
     else:
         print('u_a == 1')
         # u_a == 1
@@ -110,7 +110,7 @@ def K_ML(r, R, r_a, **kwargs):
             (u - 1) / (u + 1))
     term1 = 0.5 / (u_a**2 - 1) * np.sqrt(1 - 1 / u**2) + (
         1 + u_a / u) * np.arccosh(u)
-    term2 = -np.sign(u_a - 1) * u_a * (u_a**2 - 0.5) / (u_a**2 - 1)**1.5 * (
+    term2 = -np.sign(u_a - 1) * u_a * (u_a**2 - 0.5) / np.abs(u_a**2 - 1)**1.5 * (
         1 + u_a / u) * f((u_a * u + 1) / (u + u_a))
     return term1 + term2
 
