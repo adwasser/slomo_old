@@ -24,6 +24,13 @@ def beta_inc(a, b, x):
     return x**a * a**-1 * special.hyp2f1(a, 1. - b, a + 1., x)
 
 
+def K_isotropic(r, R, **kwargs):
+    r"""Isotropic Jeans kernel.
+    """
+    u = r / R
+    return np.sqrt(1 - 1 / u**2)
+
+
 def K_constant(r, R, beta):
     r"""Jeans kernel for constant anisotropy parameter.
 
