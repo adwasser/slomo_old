@@ -62,7 +62,7 @@ def I_nuker(R, Ib, Rb, alpha, beta, gamma):
     return I
 
 
-def I_sersic(R, I0, Re, n, dist):
+def I_sersic(R, I0, Re, n, dist, **kwargs):
     """Sersic surface brightness profile.
 
     Parameters

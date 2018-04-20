@@ -39,7 +39,7 @@ def p_ln(n):
     return 1. - 0.6097 / n + 0.05463 / n**2
 
 
-def nu_sersic(r, I0, Re, n, dist):
+def nu_sersic(r, I0, Re, n, dist, **kwargs):
     """Sersic deprojected (3D) brightness profile approximation from
     Lima Neto et al. (1999)
 
