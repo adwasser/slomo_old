@@ -45,7 +45,7 @@ def lnlike_density(I_model, I, dI):
     return np.sum(lngauss(I, I_model, dI))
 
 
-def lnlike_discrete(sigma_jeans, v, dv):
+def lnlike_discrete(sigma_jeans, v, dv, vsys=0):
     """Gaussian likelihood of discrete tracers (e.g., globular cluster or
     planetary nebula line-of-sight velocities).
 
@@ -57,17 +57,20 @@ def lnlike_discrete(sigma_jeans, v, dv):
         Measured velocity.
     dv : float or array_like
         Measurement uncertainty in `v`.
+    vsys : float, optional
+        Systemic velocity, defaults to 0
 
     Returns
     -------
     float
         Log likelihood in range (-inf, 0)
     """
-    return np.sum(lngauss_discrete(v, dv, sigma_jeans))
+    return np.sum(lngauss_discrete(v - vsys, dv, sigma_jeans))
 
 
 def lnlike_gmm(sigma_jeans_b, sigma_jeans_r, v, dv, c, dc, mu_color_b,
-               mu_color_r, sigma_color_b, sigma_color_r, phi_b, **kwargs):
+               mu_color_r, sigma_color_b, sigma_color_r, phi_b, vsys=0,
+               **kwargs):
     """Gaussian mixture model likelihood
 
     Parameters
@@ -94,18 +97,20 @@ def lnlike_gmm(sigma_jeans_b, sigma_jeans_r, v, dv, c, dc, mu_color_b,
         std of color for reds
     phi_b : float
         weight of blues (phi_r = 1 - phi_b)
+    vsys : float, optional
+        Systemic velocity, defaults to 0
     
     Returns
     -------
     float
         Log likelihood in range (-inf, 0)
     """
-    ll_b_v = lngauss_discrete(v, dv, sigma_jeans_b)
+    ll_b_v = lngauss_discrete(v - vsys, dv, sigma_jeans_b)
     ll_b_c = lngauss(c, mu_color_b, np.sqrt(sigma_color_b**2 + dc**2))
     ll_b = np.log(phi_b) + ll_b_v + ll_b_c
 
     phi_r = 1 - phi_b
-    ll_r_v = lngauss_discrete(v, dv, sigma_jeans_r)
+    ll_r_v = lngauss_discrete(v - vsys, dv, sigma_jeans_r)
     ll_r_c = lngauss(c, mu_color_r, np.sqrt(sigma_color_r**2 + dc**2))
     ll_r = np.log(phi_r) + ll_r_v + ll_r_c
 

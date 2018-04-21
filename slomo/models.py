@@ -224,6 +224,10 @@ class Measurement:
             weight = np.sqrt(kwargs["alpha_" + self.name])
         except KeyError:
             weight = 1
+        if 'vsys' in kwargs:
+            vsys = kwargs['vsys']
+        else:
+            vsys = 0
         if self.likelihood.__name__ == "lnlike_continuous":
             sigma_jeans = self.model[0](self.radii, kwargs)
             sigma = self.observables['sigma']
@@ -233,7 +237,7 @@ class Measurement:
             sigma_jeans = self.model[0](self.radii, kwargs)
             v = self.observables['v']
             dv = self.observables['dv'] / weight
-            return self.likelihood(sigma_jeans, v, dv)
+            return self.likelihood(sigma_jeans, v, dv, vsys)
         elif self.likelihood.__name__ == "lnlike_gmm":
             # TODO, find a smarter way of dealing with GMM likelihood
             sigma_b = self.model[0](self.radii, kwargs)
@@ -242,7 +246,8 @@ class Measurement:
             dv = self.observables['dv'] / weight
             c = self.observables['c']
             dc = self.observables['dc'] / weight
-            return self.likelihood(sigma_b, sigma_r, v, dv, c, dc, **kwargs)
+            return self.likelihood(sigma_b, sigma_r, v, dv, c, dc, vsys=vsys,
+                                   **kwargs)
         elif self.likelihood.__name__ == "lnlike_density":
             I_model = self.model[0](self.radii, **kwargs)
             I = self.observables['I']
