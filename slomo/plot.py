@@ -33,7 +33,7 @@ label_map = {
     "Re_s": r"$\log_{10} R_{\mathrm{eff}, *}$",
     "n_s": r"$n_*$",
     "r_a": r"$r_a$",
-    "M200": r"\log_{10} M$_{200}$",
+    "M200": r"$\log_{10} M_{200}$",
     "c200": r"$c_{200}$",
     "alpha_stars": r"$\alpha_*$",
     "alpha_gc": r"$\alpha_\mathrm{gc}$",
@@ -41,7 +41,9 @@ label_map = {
     "alpha_ms": r"$\alpha_\mathrm{ms}$",
     "alpha_ls": r"$\alpha_\mathrm{ls}$",
     "alpha_sp": r"$\alpha_\mathrm{sp}$",
-    "M_bh": r"$\log_{10}$ M$_\mathrm{bh}$"
+    "M_bh": r"$\log_{10}$ M$_\mathrm{bh}$",
+    "gamma_tot": r"$\gamma_\mathrm{tot}$",
+    "rho0": r"$\rho_0$"
 }
 
 corner_kwargs = {
@@ -105,10 +107,15 @@ def walker_plot(outfile, skip_step=100):
         col = i % ncols
         row = int(np.floor((i - col) / ncols))
         walkers = chain[:, :, i]
+        try:
+            ax = axarr[row][col]
+        except TypeError:
+            # only one row
+            ax = axarr[row if nrows > ncols else col]
         for j in range(nwalkers):
             samples = chain[j, ::n, i]
-            axarr[row][col].plot(steps, samples, alpha=0.3)
-        axarr[row][col].annotate(
+            ax.plot(steps, samples, alpha=0.3)
+        ax.annotate(
             labels[i],
             xy=(0.1, 0.8),
             xycoords="axes fraction",
@@ -116,14 +123,17 @@ def walker_plot(outfile, skip_step=100):
                   "ec": "k",
                   "pad": 4.0,
                   "alpha": 0.5})
-        axarr[row][col].set_yticks([
+        ax.set_yticks([
             walkers.min(), (walkers.min() + walkers.max()) / 2,
             walkers.max()
         ])
-        axarr[row][col].yaxis.set_major_formatter(
+        ax.yaxis.set_major_formatter(
             mpl.ticker.FormatStrFormatter("%.1f"))
     for col in range(ncols):
-        axarr[-1][col].set_xlabel('Step number')
+        try:
+            axarr[-1][col].set_xlabel('Step number')
+        except TypeError:
+            axarr[-1].set_xlabel('Step number')
     return fig, axarr
 
 
