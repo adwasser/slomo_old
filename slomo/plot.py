@@ -43,7 +43,8 @@ label_map = {
     "alpha_sp": r"$\alpha_\mathrm{sp}$",
     "M_bh": r"$\log_{10}$ M$_\mathrm{bh}$",
     "gamma_tot": r"$\gamma_\mathrm{tot}$",
-    "rho0": r"$\rho_0$"
+    "rho0": r"$\rho_0$",
+    "vsys": r"$v_\mathrm{sys}$"
 }
 
 corner_kwargs = {
