@@ -24,6 +24,7 @@ label_map = {
     "rho_s": r"$\log_{10} \rho_s$",
     "gamma": r"$\gamma$",
     "upsilon": r"$\Upsilon_*$",
+    "beta": r"$\tilde{\beta}$",
     "beta_s": r"$\tilde{\beta}_*$",
     "beta_b": r"$\tilde{\beta}_b$",
     "beta_r": r"$\tilde{\beta}_r$",

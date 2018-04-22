@@ -15,6 +15,7 @@ __all__ = [
     "M_NFW_dm",
     "M_log",
     "M_einasto",
+    "M_burkert",
     "M_power",
     "M_sersic",
     "M_point"
@@ -324,6 +325,49 @@ def M_einasto(r, h, rho0, n_einasto, dist, **kwargs):
     """
     M = 4 * np.pi * rho0 * h**3 * n_einasto * special.gamma(3 * n_einasto)
     return M * special.gammainc(3 * n_einasto, (r / h)**(1 / n_einasto))
+
+
+def M_burkert(r, r0, rho0, dist, **kwargs):
+    """Mass profile for a Burkert halo.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r0 : float
+        core radius of Burkert halo in kpc
+    rho0 : float
+        central density in Msun / kpc^3
+    dist : float
+        distance in kpc
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    M0 = 1.6 * rho0 * r0**3
+    term1 = np.log(1 + r / r0)
+    term2 = -np.arctan(r / r0)
+    term3 = 0.5 * np.log(1 + (r / r0)**2)
+    return 4 * M0 * (term1 + term2 + term3)
+
+
+def M_burkert_mu(r, rho0, dist, mu0=10**8.15, **kwargs):
+    """Mass profile for a Burkert halo with constant surface density relation.
+
+    Default of mu0 = 10**8.15 Msun / kpc2 is taken from Donato+2009.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    rho0 : float
+        central density in Msun / kpc^3
+    dist : float
+        distance in kpc
+    mu0 : float, optional
+        core surface density in Msun / kpc^2
+    """
+    r0 = mu0 / rho0
+    return M_burkert(r, r0, rho0, dist)
 
 
 def M_sersic(r, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
