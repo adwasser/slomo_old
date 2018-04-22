@@ -117,6 +117,9 @@ def sample(hdf5_file, niter, threads=None):
     if io.chain_shape(hdf5_file)[1] == 0:
         # starting new chain
         initial_guess = np.array(model.params._values)
+        # jitter for zero value guesses
+        zeros = initial_guess == 0
+        intial_guess[zeros] = 1e-2
         spread = 1e-4 * initial_guess
         positions = [
             initial_guess + spread * np.random.randn(ndim)
