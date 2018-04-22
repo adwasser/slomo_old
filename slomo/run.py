@@ -120,14 +120,14 @@ def sample(hdf5_file, niter, threads=None):
         initial_guess = np.array(model.params._values)
         # jitter for zero value guesses
         zeros = initial_guess == 0
-        intial_guess[zeros] = 1e-2
+        initial_guess[zeros] = 1e-2
         spread = 1e-4 * initial_guess
         positions = [
             initial_guess + spread * np.random.randn(ndim)
             for i in range(nwalkers)
         ]
     else:
-        # override the given inital guess positions with the last walker positions
+        # override the given initial guess positions with the last walker positions
         positions = io.read_dataset(hdf5_file, "chain")[:, -1, :]
 
     with tqdm(total=niter) as pbar:
