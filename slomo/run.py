@@ -6,6 +6,7 @@ import multiprocess
 import psutil
 import numpy as np
 from emcee import EnsembleSampler
+from tqdm import tqdm
 
 from . import io
 from .models import DynamicalModel
@@ -129,13 +130,10 @@ def sample(hdf5_file, niter, threads=None):
         # override the given inital guess positions with the last walker positions
         positions = io.read_dataset(hdf5_file, "chain")[:, -1, :]
 
-    count = 0
-    start_time = time.time()
-    for result in sampler.sample(
-            positions, iterations=niter, storechain=False):
-        printf('Iteration {:4d}: {:.4e} s'.format(count + 1,
-                                                  time.time() - start_time))
-        count += 1
-        new_positions = result[0]
-        io.append_to_chain(hdf5_file, new_positions)
+    with tqdm(total=niter) as pbar:
+        for result in sampler.sample(
+                positions, iterations=niter, storechain=False):
+            new_positions = result[0]
+            io.append_to_chain(hdf5_file, new_positions)
+            pbar.update()
     return sampler
