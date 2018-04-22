@@ -31,7 +31,7 @@ def K_isotropic(r, R, **kwargs):
     return np.sqrt(1 - 1 / u**2)
 
 
-def K_constant(r, R, beta):
+def K_constant(r, R, beta, **kwargs):
     r"""Jeans kernel for constant anisotropy parameter.
 
     From Mamon & Lokas 2005b, Eqn. A16
