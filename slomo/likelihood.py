@@ -4,7 +4,7 @@ import numpy as np
 from .pdf import (lngauss, lngauss_discrete)
 
 
-def lnlike_continuous(sigma_jeans, sigma, dsigma):
+def lnlike_continuous(sigma_jeans, sigma, dsigma, **kwargs):
     """Gaussian likelihood for a continuous tracer (e.g., unresolved field
     stars for which we have velocity dispersion measurements.
 
@@ -25,7 +25,7 @@ def lnlike_continuous(sigma_jeans, sigma, dsigma):
     return np.sum(lngauss(sigma, sigma_jeans, dsigma))
 
 
-def lnlike_density(I_model, I, dI):
+def lnlike_density(I_model, I, dI, **kwargs):
     """Gaussian likelihood for surface density data.
 
     Parameters
@@ -45,7 +45,7 @@ def lnlike_density(I_model, I, dI):
     return np.sum(lngauss(I, I_model, dI))
 
 
-def lnlike_discrete(sigma_jeans, v, dv, vsys=0):
+def lnlike_discrete(sigma_jeans, v, dv, vsys=0, **kwargs):
     """Gaussian likelihood of discrete tracers (e.g., globular cluster or
     planetary nebula line-of-sight velocities).
 
@@ -67,6 +67,38 @@ def lnlike_discrete(sigma_jeans, v, dv, vsys=0):
     """
     return np.sum(lngauss_discrete(v - vsys, dv, sigma_jeans))
 
+
+def lnlike_discrete_outlier(sigma_jeans, v, dv, sigma_out, phi_out, vsys=0,
+                            **kwargs):
+    """Gaussian likelihood of discrete tracers (e.g., globular cluster or
+    planetary nebula line-of-sight velocities), with an additional term for an
+    outlier distribution.
+
+    Parameters
+    ----------
+    sigma_jeans : float or array_like
+        Jeans model prediction.
+    v : float or array_like
+        Measured velocity.
+    dv : float or array_like
+        Measurement uncertainty in `v`.
+    sigma_out : float
+        velocity dispersion of the outlier population
+    phi_out : float
+        probability of a point being in the outlier distribution
+    vsys : float, optional
+        Systemic velocity, defaults to 0
+
+    Returns
+    -------
+    float
+        Log likelihood in range (-inf, 0)
+    """
+    phi_in = 1 - phi_out
+    ll_in = np.log(phi_in) + lngauss_discrete(v - vsys, dv, sigma_jeans)
+    ll_out = np.log(phi_out) + lngauss_discrete(v - vsys, dv, sigma_out)
+    return np.sum(np.logaddexp(ll_in, ll_out))
+    
 
 def lnlike_gmm(sigma_jeans_b, sigma_jeans_r, v, dv, c, dc, mu_color_b,
                mu_color_r, sigma_color_b, sigma_color_r, phi_b, vsys=0,

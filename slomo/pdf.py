@@ -43,6 +43,8 @@ def lnbeta(x, alpha, beta):
     float or array_like
         in (-inf, 0)
     """
+    if x < 0 or x > 1:
+        return -np.inf
     term1 = (alpha - 1) * np.log(x)
     term2 = (beta - 1) * np.log(1 - x)
     term3 = -np.log(special.beta(alpha, beta))
