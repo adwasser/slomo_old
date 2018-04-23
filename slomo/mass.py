@@ -16,6 +16,7 @@ __all__ = [
     "M_log",
     "M_einasto",
     "M_burkert",
+    "M_burkert_mu",
     "M_power",
     "M_sersic",
     "M_point"

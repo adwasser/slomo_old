@@ -30,6 +30,8 @@ label_map = {
     "beta_r": r"$\tilde{\beta}_r$",
     "dist": r"$D$",
     "phi_b": r"$\phi_b$",
+    "phi_r": r"$\phi_r$",
+    "phi_out": r"$\phi_\mathrm{out}$",
     "I0_s": r"$\log_{10} \Sigma_{0, *}$",
     "Re_s": r"$\log_{10} R_{\mathrm{eff}, *}$",
     "n_s": r"$n_*$",
