@@ -260,6 +260,7 @@ def component_plot(outfile,
                    rmax=1000,
                    nsamples=10000,
                    size=50,
+                   mass_only=False,
                    **fig_kwargs):
     """Plot mass components and total mass.
     
@@ -277,6 +278,8 @@ def component_plot(outfile,
         number of subsamples of chain
     size : int, optional
         number of radial points on grid
+    mass_only : bool, optional
+        if true, only plot mass, not v_circ
     fig_kwargs
         keywords passed to pyplot.subplots
     
@@ -308,9 +311,12 @@ def component_plot(outfile,
 
     color = cycle(["C" + str(i) for i in range(6)])
     style = cycle(["--", "-.", ":"])
-    label_map = {"dm": "DM", "st": "Stars", "bh": "BH"}
+    label_map = {"dm": "DM", "st": "Stars", "bh": "BH", "tot": "Total"}
 
-    fig, (ax0, ax1) = plt.subplots(2, sharex=True, **fig_kwargs)
+    if not mass_only:
+        fig, (ax_v, ax_m) = plt.subplots(2, sharex=True, **fig_kwargs)
+    else:
+        fig, ax_m = plt.subplots(**fig_kwargs)
 
     for i, (name, mass_component) in enumerate(mass_model.items()):
         M_low, M_med, M_high = np.percentile(profiles[i], [16, 50, 84], axis=0)
@@ -320,36 +326,47 @@ def component_plot(outfile,
             label = label_map[name]
         except KeyError:
             label = name
+        if len(mass_model) == 1:
+            label = None
         kpc_per_arcsec = distances[i] * radians_per_arcsec
         kpc = kpc_per_arcsec * radii
-        vc_med = np.sqrt(G * M_med / kpc)
-        vc_low = np.sqrt(G * M_low / kpc)
-        vc_high = np.sqrt(G * M_high / kpc)
-        ax0.plot(radii, vc_med, c + s, label=label)
-        ax0.fill_between(radii, vc_low, vc_high, facecolor=c, alpha=0.3)
-        ax1.plot(radii, M_med, c + s)
-        ax1.fill_between(radii, M_low, M_high, facecolor=c, alpha=0.3)
+        if not mass_only:
+            vc_med = np.sqrt(G * M_med / kpc)
+            vc_low = np.sqrt(G * M_low / kpc)
+            vc_high = np.sqrt(G * M_high / kpc)
+            ax_v.plot(radii, vc_med, c + s, label=label)
+            ax_v.fill_between(radii, vc_low, vc_high, facecolor=c, alpha=0.3)
+            label = None
+        ax_m.plot(radii, M_med, c + s, label=label)
+        ax_m.fill_between(radii, M_low, M_high, facecolor=c, alpha=0.3)
     # total mass profile
     M_low, M_med, M_high = np.percentile(
         np.sum(profiles, axis=0), q=[16, 50, 84], axis=0)
     kpc_per_arcsec = np.median(distances) * radians_per_arcsec
     kpc = kpc_per_arcsec * radii
-    vc_med = np.sqrt(G * M_med / kpc)
-    vc_low = np.sqrt(G * M_low / kpc)
-    vc_high = np.sqrt(G * M_high / kpc)
-    ax0.plot(radii, vc_med, 'k-', label="Total")
-    ax0.fill_between(radii, vc_low, vc_high, facecolor='k', alpha=0.3)
-    ax1.plot(radii, M_med, 'k-')
-    ax1.fill_between(radii, M_low, M_high, facecolor='k', alpha=0.3)
-
-    ax0.legend(loc="best")
-    ax0.set_xlim(radii.min(), radii.max())
-    ax0.set_xscale('log')
-    ax0.set_ylabel(r'$v_\mathrm{circ}$  [km s$^{-1}$]')
-    ax1.set_xlim(radii.min(), radii.max())
-    ax1.set_xscale('log')
-    ax1.set_yscale('log')
-    ax1.set_ylabel(r'$M(<R)$  [M$_\odot$]')
-    ax1.set_xlabel('R  [arcsec]')
-    return fig, (ax0, ax1)
-
+    if not mass_only:
+        vc_med = np.sqrt(G * M_med / kpc)
+        vc_low = np.sqrt(G * M_low / kpc)
+        vc_high = np.sqrt(G * M_high / kpc)
+        ax_v.plot(radii, vc_med, 'k-', label="Total")
+        ax_v.fill_between(radii, vc_low, vc_high, facecolor='k', alpha=0.3)
+        label = None
+    else:
+        label = "Total"
+    ax_m.plot(radii, M_med, 'k-', label=label)
+    ax_m.fill_between(radii, M_low, M_high, facecolor='k', alpha=0.3)
+    if not mass_only:
+        ax_v.legend(loc="best")
+        ax_v.set_xlim(radii.min(), radii.max())
+        ax_v.set_xscale('log')
+        ax_v.set_ylabel(r'$v_\mathrm{circ}$  [km s$^{-1}$]')
+    else:
+        ax_m.legend(loc="upper left")
+    ax_m.set_xlim(radii.min(), radii.max())
+    ax_m.set_xscale('log')
+    ax_m.set_yscale('log')
+    ax_m.set_ylabel(r'$M(<R)$  [M$_\odot$]')
+    ax_m.set_xlabel('R  [arcsec]')
+    if not mass_only:
+        return fig, (ax_v, ax_m)
+    return fig, ax_m
