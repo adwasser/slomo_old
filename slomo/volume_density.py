@@ -19,7 +19,9 @@ __all__ = [
     "p_ln",
     "nu_sersic",
     "L_sersic",
-    "L_sersic_tot"
+    "L_sersic_tot",
+    "nu_king",
+    "nu_plummer"
 ]
 
 
@@ -83,6 +85,59 @@ def nu_sersic_b(r, I0_b, Re_b, n_b, dist, **kwargs):
 
 def nu_sersic_r(r, I0_r, Re_r, n_r, dist, **kwargs):
     return nu_sersic(r, I0_r, Re_r, n_r, dist)
+
+
+def nu_king(r, r_c, r_lim, dist, k=1, **kwargs):
+    """ King profile volume density.
+
+    Parameters
+    ----------
+    r : float or array_like
+        the deprojected radius, in arcsec
+    r_c : float
+        the core radius, in arcsec
+    r_lim : float
+        the limiting radius in arcsec
+    dist : float
+        the distance to the galaxy in kpc
+    k : float
+        the density normalization
+
+    Returns
+    -------
+    float or array_like
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r *= kpc_per_arcsec
+    r_c *= kpc_per_arcsec
+    r_lim *= kpc_per_arcsec
+    z = np.sqrt((1 + r**2 / r_c**2) / (1 + r_lim**2 / r_c**2))
+    factor = k / (np.pi * r_c * (1 + (r_lim / r_c)**2)**1.5 * z**2)
+    return factor * (np.arccos(z) / z - np.sqrt(1 - z**2))
+
+
+def nu_plummer(r, r_pl, dist, k=1, **kwargs):
+    """Plummer profile surface density
+    
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radius in arcsec
+    r_pl : float
+        Plummer radius
+    dist : float
+        distance to the galaxy in kpc
+    k : float
+        the density normalization
+
+    Returns
+    -------
+    float or array_like
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r *= kpc_per_arcsec
+    r_pl *= kpc_per_arcsec
+    return k / (1 + (r / r_pl))**2.5
 
 
 def nu_integral(r, dIdR):

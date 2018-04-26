@@ -16,7 +16,9 @@ from .utils import radians_per_arcsec
 __all__ = [
     "b_cb",
     "I_sersic",
-    "I_nuker"
+    "I_nuker",
+    "I_plummer",
+    "I_king"
 ]
 
 def b_cb(n):
@@ -121,3 +123,53 @@ def mu_sersic(R, mu_eff, Re, n):
     float or array_like
     """
     return mu_eff + 2.5 * b_cb(n) / np.log(10) * ((R / Re)**(1 / n) - 1)
+
+
+def I_king(R, r_c, r_lim, dist, k=1, **kwargs):
+    """ King profile surface density.
+
+    Parameters
+    ----------
+    R : float or array_like
+        the projected radius, in arcsec
+    r_c : float
+        the core radius, in arcsec
+    r_lim : float
+        the limiting radius in arcsec
+    dist : float
+        the distance to the galaxy in kpc
+    k : float
+        the density normalization
+
+    Returns
+    -------
+    float or array_like
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    R *= kpc_per_arcsec
+    r_c *= kpc_per_arcsec
+    r_lim *= kpc_per_arcsec
+    return k * ((1 + R**2 / r_c**2)**-0.5 - (1 + r_lim**2 / r_c**2)**-0.5)**2
+
+def I_plummer(R, r_pl, dist, k=1, **kwargs):
+    """Plummer profile surface density
+    
+    Parameters
+    ----------
+    R : float or array_like
+        projected radius in arcsec
+    r_pl : float
+        Plummer radius
+    dist : float
+        distance to the galaxy in kpc
+    k : float
+        the density normalization
+
+    Returns
+    -------
+    float or array_like
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    R *= kpc_per_arcsec
+    r_pl *= kpc_per_arcsec
+    return 4 / 3 * k * r_pl / (1 + (R / r_pl)**2)**2
