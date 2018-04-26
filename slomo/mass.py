@@ -89,6 +89,33 @@ def _gNFW_to_200(rho_s, r_s, gamma, h=0.678):
     return M200, c200
 
 
+def _burkert_to_200(rho0, r0, h=0.678):
+    """Convert Burkert halo parameters to M200, r200 values.
+
+    Parameters
+    ----------
+    rho0 : float or array_like
+        scale density in Msun / kpc^3
+    r0 : float or array_like
+        scale radius in kpc
+    h : float, optional
+        Hubble parameter in units of 100 km/s/Mpc.
+        Defaults to the Planck 2015 value.
+
+    Returns
+    -------
+    M200 : float or array_like
+        Virial mass in Msun
+    r200 : float or array_like
+        halo virial radius in kpc
+    """
+    rho_crit = 277.46 * h**2  # Msun / kpc^3
+    M = lambda r: M_burkert(r, r0, rho0, dist=1 / radians_per_arcsec)
+    r200 = _rvir(M, delta_c=200, rho_crit=rho_crit)
+    M200 = 4 * np.pi * r200**3 / 3 * (200 * rho_crit)
+    return M200, r200
+
+
 def d_n(n):
     """Einasto coefficient, as described by Retana-Montenegro+2012.
 
@@ -281,6 +308,33 @@ def M_NFW_dm(r, M200, dist, h=0.678, **kwargs):
     """
     c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
     return M_gNFW200(r, M200, c200, 1.0, dist, h=h, **kwargs)
+
+
+def M_gNFW_dm(r, M200, gamma, dist, h=0.678, **kwargs):
+    """gNFW halo parameterized with mass, with concentration from 
+    Dutton & Maccio 2014.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    gamma : float
+        negative of the inner DM density log-slope
+        gamma is 1 for a classic NFW cusp and 0 for a core
+    dist : float
+        distance in kpc
+    h : float, optional
+        Hubble parameter in units of 100 km/s/Mpc.
+        Defaults to the Planck 2015 value.
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
+    return M_gNFW200(r, M200, c200, gamma, dist, h=h, **kwargs)
 
 
 def M_log(r, r_c, rho_c, dist, **kwargs):
