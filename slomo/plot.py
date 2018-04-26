@@ -46,7 +46,8 @@ label_map = {
     "alpha_sp": r"$\alpha_\mathrm{sp}$",
     "M_bh": r"$\log_{10}$ M$_\mathrm{bh}$",
     "gamma_tot": r"$\gamma_\mathrm{tot}$",
-    "rho0": r"$\rho_0$",
+    "rho0": r"$\log_{10} \rho_0$",
+    "r0": r"$\log_{10} r_0$",
     "vsys": r"$v_\mathrm{sys}$",
     "Re": r"$R_\mathrm{e}$"
 }
