@@ -453,6 +453,36 @@ def M_sersic(r, upsilon, I0_s, Re_s, n_s, dist, **kwargs):
     return upsilon * L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
+def M_plummer(r, upsilon, r_pl, ftot, dist, **kwargs):
+    """Enclosed mass profile for a Plummer luminosity profile with constant
+    mass-to-light ratio.
+
+
+    Parameters
+    ----------
+    r : float or array_like
+        Deprojected radius in arcsec
+    upsilon : float
+        mass-to-light ratio in Msun / Lsun
+    r_pl : float
+        Plummer radius
+    ftot : float
+        Total flux in Lsun / kpc2
+    dist : float
+        distance to the galaxy in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed Mass within deprojected radius `r`
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    r_pl = r_pl * kpc_per_arcsec 
+    Ltot = ftot * 4 * np.pi * dist**2
+    return upsilon * Ltot * r**3 / (r**2 + r_pl**2)**1.5
+    
+    
 def M_power(r, rho0, gamma_tot, dist, r0=1, **kwargs):
     r"""Power law density profile.
 

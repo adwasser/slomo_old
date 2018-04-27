@@ -108,15 +108,15 @@ def nu_king(r, r_c, r_lim, dist, k=1, **kwargs):
     float or array_like
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    r *= kpc_per_arcsec
-    r_c *= kpc_per_arcsec
-    r_lim *= kpc_per_arcsec
+    r = r * kpc_per_arcsec
+    r_c = r_c * kpc_per_arcsec
+    r_lim = r_lim * kpc_per_arcsec
     z = np.sqrt((1 + r**2 / r_c**2) / (1 + r_lim**2 / r_c**2))
     factor = k / (np.pi * r_c * (1 + (r_lim / r_c)**2)**1.5 * z**2)
     return factor * (np.arccos(z) / z - np.sqrt(1 - z**2))
 
 
-def nu_plummer(r, r_pl, dist, k=1, **kwargs):
+def nu_plummer(r, r_pl, dist, M=1, **kwargs):
     """Plummer profile surface density
     
     Parameters
@@ -127,16 +127,17 @@ def nu_plummer(r, r_pl, dist, k=1, **kwargs):
         Plummer radius
     dist : float
         distance to the galaxy in kpc
-    k : float
-        the density normalization
+    M : float
+        total mass in the distribution
 
     Returns
     -------
     float or array_like
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    r *= kpc_per_arcsec
-    r_pl *= kpc_per_arcsec
+    r = r * kpc_per_arcsec
+    r_pl = r_pl * kpc_per_arcsec
+    k = 3 * M / (4 * np.pi * r_pl**3)
     return k / (1 + (r / r_pl))**2.5
 
 

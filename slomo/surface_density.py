@@ -146,12 +146,12 @@ def I_king(R, r_c, r_lim, dist, k=1, **kwargs):
     float or array_like
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    R *= kpc_per_arcsec
-    r_c *= kpc_per_arcsec
-    r_lim *= kpc_per_arcsec
+    R = R * kpc_per_arcsec
+    r_c = r_c * kpc_per_arcsec
+    r_lim = r_lim * kpc_per_arcsec
     return k * ((1 + R**2 / r_c**2)**-0.5 - (1 + r_lim**2 / r_c**2)**-0.5)**2
 
-def I_plummer(R, r_pl, dist, k=1, **kwargs):
+def I_plummer(R, r_pl, dist, M=1, **kwargs):
     """Plummer profile surface density
     
     Parameters
@@ -162,14 +162,15 @@ def I_plummer(R, r_pl, dist, k=1, **kwargs):
         Plummer radius
     dist : float
         distance to the galaxy in kpc
-    k : float
-        the density normalization
+    M : float
+        total mass in the distribution
 
     Returns
     -------
     float or array_like
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    R *= kpc_per_arcsec
-    r_pl *= kpc_per_arcsec
-    return 4 / 3 * k * r_pl / (1 + (R / r_pl)**2)**2
+    R = R * kpc_per_arcsec
+    r_pl = r_pl * kpc_per_arcsec
+    k = 3 * M / (4 * np.pi * r_pl**3)
+    return M * r_pl**-2 * (1 + (R / r_pl)**2)**-2
