@@ -262,6 +262,7 @@ def component_plot(outfile,
                    nsamples=10000,
                    size=50,
                    mass_only=False,
+                   kpc_axis=False,
                    **fig_kwargs):
     """Plot mass components and total mass.
     
@@ -331,43 +332,53 @@ def component_plot(outfile,
             label = None
         kpc_per_arcsec = distances[i] * radians_per_arcsec
         kpc = kpc_per_arcsec * radii
+        if kpc_axis:
+            x = radii * kpc_per_arcsec
+        else:
+            x = radii
         if not mass_only:
             vc_med = np.sqrt(G * M_med / kpc)
             vc_low = np.sqrt(G * M_low / kpc)
             vc_high = np.sqrt(G * M_high / kpc)
-            ax_v.plot(radii, vc_med, c + s, label=label)
-            ax_v.fill_between(radii, vc_low, vc_high, facecolor=c, alpha=0.3)
+            ax_v.plot(x, vc_med, c + s, label=label)
+            ax_v.fill_between(x, vc_low, vc_high, facecolor=c, alpha=0.3)
             label = None
-        ax_m.plot(radii, M_med, c + s, label=label)
-        ax_m.fill_between(radii, M_low, M_high, facecolor=c, alpha=0.3)
+        ax_m.plot(x, M_med, c + s, label=label)
+        ax_m.fill_between(x, M_low, M_high, facecolor=c, alpha=0.3)
     # total mass profile
     M_low, M_med, M_high = np.percentile(
         np.sum(profiles, axis=0), q=[16, 50, 84], axis=0)
     kpc_per_arcsec = np.median(distances) * radians_per_arcsec
     kpc = kpc_per_arcsec * radii
+    if kpc_axis:
+        x = radii * kpc_per_arcsec
+        xlabel = r'$r \ (kpc)$'
+    else:
+        x = radii
+        xlabel = r'$r (arcsec)$'
     if not mass_only:
         vc_med = np.sqrt(G * M_med / kpc)
         vc_low = np.sqrt(G * M_low / kpc)
         vc_high = np.sqrt(G * M_high / kpc)
-        ax_v.plot(radii, vc_med, 'k-', label="Total")
-        ax_v.fill_between(radii, vc_low, vc_high, facecolor='k', alpha=0.3)
+        ax_v.plot(x, vc_med, 'k-', label="Total")
+        ax_v.fill_between(x, vc_low, vc_high, facecolor='k', alpha=0.3)
         label = None
     else:
         label = "Total"
-    ax_m.plot(radii, M_med, 'k-', label=label)
-    ax_m.fill_between(radii, M_low, M_high, facecolor='k', alpha=0.3)
+    ax_m.plot(x, M_med, 'k-', label=label)
+    ax_m.fill_between(x, M_low, M_high, facecolor='k', alpha=0.3)
     if not mass_only:
         ax_v.legend(loc="best")
-        ax_v.set_xlim(radii.min(), radii.max())
+        ax_v.set_xlim(x.min(), x.max())
         ax_v.set_xscale('log')
-        ax_v.set_ylabel(r'$v_\mathrm{circ}$  [km s$^{-1}$]')
+        ax_v.set_ylabel(r'$v_\mathrm{circ} \ (\mathrm{km s}^{-1})$')
     else:
         ax_m.legend(loc="upper left")
-    ax_m.set_xlim(radii.min(), radii.max())
+    ax_m.set_xlim(x.min(), x.max())
     ax_m.set_xscale('log')
     ax_m.set_yscale('log')
-    ax_m.set_ylabel(r'$M(<R)$  [M$_\odot$]')
-    ax_m.set_xlabel('R  [arcsec]')
+    ax_m.set_ylabel(r'$M \ (M_\odot)$')
+    ax_m.set_xlabel(xlabel)
     if not mass_only:
         return fig, (ax_v, ax_m)
     return fig, ax_m

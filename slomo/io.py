@@ -19,7 +19,7 @@ from .models import (Tracer, Measurement, MassModel)
 from .utils import get_function
 from .parameters import (Parameter, ParamDict)
 from . import (pdf, likelihood, transforms, mass, anisotropy, surface_density,
-               volume_density)
+               volume_density, joint_priors)
 from . import __version__, __path__
 
 warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
@@ -153,6 +153,14 @@ def read_yaml(filename):
         config['measurements'][i] = Measurement(**measurement)
     config['measurements'] = OrderedDict([(mm.name, mm)
                                           for mm in config['measurements']])
+    try:
+        prior_strings = config['joint_priors']
+        joint_prior_list = []
+        for s in prior_strings:
+            joint_prior_list.append(get_function(joint_priors, s))
+        config['joint_priors'] = joint_prior_list
+    except KeyError:
+        config['joint_priors'] = None
     return config
 
 

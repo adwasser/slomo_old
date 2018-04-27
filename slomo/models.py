@@ -7,7 +7,6 @@ import numpy as np
 from . import (pdf, jeans)
 from .parameters import Parameter
 
-
 class DynamicalModel:
     """Complete description of the dynamical model, including measurement
     model, data, and priors.
@@ -23,6 +22,10 @@ class DynamicalModel:
         Functions for enclosed mass
     measurements : OrderedDict
         Contains Measurement instances
+    joint_priors : list
+        list of strings denoting which, if any, joint priors to use
+        currently a stellar-to-halo mass relation ("smhm") and a 
+        halo mass-concentration relation ("hmc") are offered
     settings : dict
         Other keyword arguments to store for posterity
     """
@@ -33,12 +36,14 @@ class DynamicalModel:
                  mass_model,
                  measurements,
                  weight_max=10,
+                 joint_priors=None,
                  **settings):
         self.params = params
         self.constants = constants if constants is not None else {}
         self.tracers = tracers
         self.mass_model = mass_model
         self.measurements = measurements
+        self.joint_priors = joint_priors
         # add weight parameters
         for mm in self.measurements.values():
             if mm.weight:
@@ -90,9 +95,12 @@ class DynamicalModel:
 
         # log of the prior probability
         lnprior = self.params.lnprior(param_values)
+        if self.joint_priors is not None:
+            for f in self.joint_priors:
+                lnprior += f(self, param_values)
         if not np.isfinite(lnprior):
             return -np.inf
-
+        
         # log of the likelihood
         lnlike = 0
         for mm in self.measurements.values():
