@@ -352,10 +352,10 @@ def component_plot(outfile,
     kpc = kpc_per_arcsec * radii
     if kpc_axis:
         x = radii * kpc_per_arcsec
-        xlabel = r'$r \ (kpc)$'
+        xlabel = r'$r \ (\mathrm{kpc})$'
     else:
         x = radii
-        xlabel = r'$r (arcsec)$'
+        xlabel = r'$r (\mathrm{arcsec})$'
     if not mass_only:
         vc_med = np.sqrt(G * M_med / kpc)
         vc_low = np.sqrt(G * M_low / kpc)
