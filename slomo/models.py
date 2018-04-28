@@ -95,11 +95,11 @@ class DynamicalModel:
 
         # log of the prior probability
         lnprior = self.params.lnprior(param_values)
+        if not np.isfinite(lnprior):
+            return -np.inf
         if self.joint_priors is not None:
             for f in self.joint_priors:
                 lnprior += f(self, param_values)
-        if not np.isfinite(lnprior):
-            return -np.inf
         
         # log of the likelihood
         lnlike = 0
