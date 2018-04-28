@@ -69,7 +69,11 @@ def smhm(model, values, h=0.678, delta_c='vir', z=0):
     kwargs = model.construct_kwargs(values)
     Mst = model.mass_model['st'](np.inf, **kwargs)
     Mh_function = lambda r: model.mass_model['dm'](r, **kwargs)
-    rvir = mass._rvir(Mh_function, rhigh=1e8, delta_c=delta_c, rho_crit=rho_crit)
+    try:
+        rvir = mass._rvir(Mh_function, rhigh=1e8, delta_c=delta_c, rho_crit=rho_crit)
+    except ValueError:
+        # approximate with M200 value
+        rvir = (3 * kwargs['M200'] / (4 * np.pi * 200 * rho_crit))**(1 / 3)
     Mvir = Mh_function(rvir)
     return _ln_pdf_rp(Mvir, Mst, z=z)
 
