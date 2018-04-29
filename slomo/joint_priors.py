@@ -2,6 +2,11 @@
 
 import numpy as np
 
+from colossus.cosmology import cosmology
+from colossus.halo import mass_defs, mass_so
+from colossus.halo.concentration import concentration
+cosmo = cosmology.setCosmology('planck15')
+
 from . import pdf
 from . import mass
 
@@ -44,7 +49,7 @@ def _ln_pdf_rp(Mhalo, Mstar, sigma_h=0.15, z=0):
     mu = np.log10(Mstar_model)
     return pdf.lngauss(x=x, mu=mu, sigma=sigma_h)
 
-def smhm(model, values, h=0.678, delta_c='vir', z=0):
+def smhm(model, values, cosmo=cosmo, mdef='200c', z=0):
     """Joint prior from the stellar mass--halo mass relation.
     Modeled as a log-normal around the predicted stellar mass from fixed halo mass.
     Currently, the redshift dependent model of Rodriguez-Puebla is implemented.
@@ -54,47 +59,66 @@ def smhm(model, values, h=0.678, delta_c='vir', z=0):
     model : DynamicalModel instance
     values : array_like
          values in parameter space at which to evaluate the prior
-    h : float
-        reduced Hubble parameter (in units of 100 km / s / Mpc)
-    delta_c : float or string
-        If a number than the factor of the critical density to use in the halo
-        mass distribution.  Else, if delta_c == 'vir', then use the z=0 delta_vir value.
+    cosmo : colossus.Cosmology instance
+    mdef : string
+        Colossus mass definition string for input halo parameters
+        e.g., 'vir', '200m', '200c'
     z : float
-        redshift (todo: implement redshift scaling for delta_vir...)
-    """    
-    rho_crit = 277.46 * h**2  # Msun / kpc^3
-    if delta_c == 'vir':
-        # z = 0 deltaVir from Colossus for Planck15        
-        delta_c = 102.35553002960845
+        redshift
+    """
+    h = cosmo.h
     kwargs = model.construct_kwargs(values)
+    if 'M200' in kwargs and 'c200' in kwargs:
+        # should be '200c' def
+        assert mdef == '200c'
+        M200 = kwargs['M200']
+        c200 = kwargs['c200']
+        # colossus assumes halo masses are in Msun / h
+        Mvir, rvir, cvir = mass_defs.changeMassDefinition(M200 / h, c200, z,
+                                                          mdef_in=mdef,
+                                                          mdef_out='vir')
+        # convert back to Msun (no h scaling)
+        Mvir = Mvir * h
+    else:
+        rho_crit = cosmo.rho_c(z) * h**2 # Msun / kpc3
+        delta_c = mass_so.deltaVir(z)
+        Mh_function = lambda r: model.mass_model['dm'](r, **kwargs)
+        try:
+            rvir = mass._rvir(Mh_function, rhigh=1e8, delta_c=delta_c, rho_crit=rho_crit)
+        except ValueError:
+            # meh, approximate with M200 value
+            rvir = (3 * kwargs['M200'] / (4 * np.pi * 200 * rho_crit))**(1 / 3)
+        Mvir = Mh_function(rvir)
     Mst = model.mass_model['st'](np.inf, **kwargs)
-    Mh_function = lambda r: model.mass_model['dm'](r, **kwargs)
-    try:
-        rvir = mass._rvir(Mh_function, rhigh=1e8, delta_c=delta_c, rho_crit=rho_crit)
-    except ValueError:
-        # approximate with M200 value
-        rvir = (3 * kwargs['M200'] / (4 * np.pi * 200 * rho_crit))**(1 / 3)
-    Mvir = Mh_function(rvir)
     return _ln_pdf_rp(Mvir, Mst, z=z)
 
 
-def hmc(model, values, h=0.678, z=0):
+def hmc(model, values, cosmo=cosmo, mdef='200c', relation='diemer15', z=0,
+        sigma=0.16):
     """Joint prior from the  halo mass--concentration mass relation.
-    Relation is for z=0 from Dutton & Maccio 2014 for an NFW profile at Delta = 200.
+
+    Relation is from Diemer & Kravtsov 2015
 
     Parameters
     ----------
     model : DynamicalModel instance
     values : array_like
          values in parameter space at which to evaluate the prior
-    h : float
-        reduced Hubble parameter (in units of 100 km / s / Mpc)
+    cosmo : colossus.Cosmology instance
+    mdef : string
+        Colossus mass definition string for input halo parameters
+        e.g., 'vir', '200m', '200c'
+    relation : string
+        See the list here for the options.
+        https://bdiemer.bitbucket.io/colossus/halo_concentration.html
+        Defaults to the mass-concentration model of Diemer & Kravtsov 2015.
     z : float
-        redshift (todo: implement redshift scaling for delta_vir...)
+        redshift
+    sigma : float
+        scatter in M-c relation, default from Diemer & Kravtsov
     """
-    if z != 0:
-        raise ValueError('Only valid for z = 0!')
-    rho_crit = 277.46 * h**2  # Msun / kpc^3
+    h = cosmo.h
+    rho_crit = cosmo.rho_c(z) * h**2 # Msun / kpc3
     kwargs = model.construct_kwargs(values)
     Mh_function = lambda r: model.mass_model['dm'](r, **kwargs)
     if 'M200' in kwargs:
@@ -106,10 +130,16 @@ def hmc(model, values, h=0.678, z=0):
     if 'c200' in kwargs:
         log_c200 = np.log10(kwargs['c200'])
     else:
-        raise ValueError('Need to have a defined halo concentration!')
+        try:
+            r_s = kwargs['r_s']
+            c200 = r200 / r_s
+        except KeyError:
+            raise ValueError('Need to have a defined halo concentration!')
     a_dm = 0.905
     b_dm = -0.101
     sigma_dm = 0.11
     log_c200_dm = a_dm + b_dm * np.log10(M200 / (1e12 * h**-1))
-    return pdf.lngauss(x=log_c200, mu=log_c200_dm, sigma=sigma_dm)
+    # colossus uses halo mass in units of Msun / h
+    c200_model = concentration(M200 / h, mdef=mdef, z=z, model=relation)
+    return pdf.lngauss(x=log_c200, mu=np.log10(c200_model), sigma=sigma)
     

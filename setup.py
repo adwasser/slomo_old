@@ -23,7 +23,7 @@ setup(
     packages=["slomo"],
     install_requires=[
         "numpy", "scipy", "astropy", "emcee", "ruamel.yaml", "h5py", "dill",
-        "multiprocess", "psutil"
+        "multiprocess", "psutil", "colossus"
     ],
     include_package_data=True,
     scripts=["bin/slomo"])
