@@ -94,7 +94,7 @@ def smhm(model, values, cosmo=cosmo, mdef='200c', z=0, sigma_h=0.15):
         # use the relation from Munchi+2017
         gamma = -0.26
         sigma_flat = 0.2
-        logM1 = np.log10(5e9)
+        logM1 = 11.5 # median value from Moster+2013
         logMvir = np.log10(Mvir)
         if logMvir < logM1:
             sigma_h = sigma_flat + gamma * (logMvir - logM1)
