@@ -49,7 +49,7 @@ def _ln_pdf_rp(Mhalo, Mstar, sigma_h=0.15, z=0):
     mu = np.log10(Mstar_model)
     return pdf.lngauss(x=x, mu=mu, sigma=sigma_h)
 
-def smhm(model, values, cosmo=cosmo, mdef='200c', z=0):
+def smhm(model, values, cosmo=cosmo, mdef='200c', z=0, sigma_h=0.15):
     """Joint prior from the stellar mass--halo mass relation.
     Modeled as a log-normal around the predicted stellar mass from fixed halo mass.
     Currently, the redshift dependent model of Rodriguez-Puebla is implemented.
@@ -90,7 +90,39 @@ def smhm(model, values, cosmo=cosmo, mdef='200c', z=0):
             rvir = (3 * kwargs['M200'] / (4 * np.pi * 200 * rho_crit))**(1 / 3)
         Mvir = Mh_function(rvir)
     Mst = model.mass_model['st'](np.inf, **kwargs)
-    return _ln_pdf_rp(Mvir, Mst, z=z)
+    if sigma_h == 'variable':
+        # use the relation from Munchi+2017
+        gamma = -0.26
+        sigma_flat = 0.2
+        logM1 = np.log10(5e9)
+        logMvir = np.log10(Mvir)
+        if logMvir < logM1:
+            sigma_h = sigma_flat + gamma * (logMvir - logM1)
+        else:
+            sigma_h = sigma_flat
+    return _ln_pdf_rp(Mvir, Mst, z=z, sigma_h=sigma_h)
+
+
+def smhm_variable_scatter(model, values, cosmo=cosmo, mdef='200c', z=0):
+    """Joint prior from the stellar mass--halo mass relation.
+    Modeled as a log-normal around the predicted stellar mass from fixed halo mass.
+    Currently, the redshift dependent model of Rodriguez-Puebla is implemented.
+    
+    This version uses a mass-dependent scatter from Munchi+2017.
+
+    Parameters
+    ----------
+    model : DynamicalModel instance
+    values : array_like
+         values in parameter space at which to evaluate the prior
+    cosmo : colossus.Cosmology instance
+    mdef : string
+        Colossus mass definition string for input halo parameters
+        e.g., 'vir', '200m', '200c'
+    z : float
+        redshift
+    """
+    return smhm(model, values, cosmo=cosmo, mdef=mdef, z=z, sigma_h='variable')
 
 
 def hmc(model, values, cosmo=cosmo, mdef='200c', relation='diemer15', z=0,
