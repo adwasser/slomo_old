@@ -6,12 +6,13 @@ from scipy import optimize
 
 from .surface_density import b_cb
 from .volume_density import p_ln
-from .utils import radians_per_arcsec
+from .utils import radians_per_arcsec, G
 
 __all__ = [
     "L_sersic",
     "M_gNFW",
     "M_gNFW200",
+    "M_coreNFW",
     "M_NFW_dm",
     "M_log",
     "M_einasto",
@@ -251,6 +252,115 @@ def M_NFW(r, r_s, rho_s, dist, **kwargs):
         Enclosed mass in Msun
     """
     return M_gNFW(r, r_s, rho_s, 1.0, dist, **kwargs)
+
+
+def M_coreNFW(r, r_s, rho_s, r_c, n_c, dist, **kwargs):
+    """Enclosed dark matter, coreNFW profile.
+    See Read+2016
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    r_c : float
+        core radius of halo in kpc
+    n_c : float
+        power-law index of core transition term
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+
+
+def M_coreNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **kwargs):
+    """coreNFW enclosed dark matter, parameterized as in Read, Agartz, & Collins 2016.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    Re_s : float
+        half-light radius in arcsec
+    t_sf : float
+        time since the start of star formation, in Gyr
+    dist : float
+        distance in kpc
+    eta_rac : float
+        eta parameter from RAC
+    kappa_rac : float
+        kappa parameter from RAC
+    h : float
+        Hubble parameter in 100 km/s/Mpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r_c = eta_rac * kpc_per_arcsec * Re_s
+    # G in Msun^-1 kpc^3 Gyr^-2
+    G_alt = 4.498502151575286e-06 
+    t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
+    n_c = np.tanh(kappa_rac * t_sf / t_dyn)
+    return M_coreNFW(r, r_s, rho_s, r_c, n_c, dist)
+
+
+def M_coreNFW200_RAC(r, M200, c200, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, h=0.678, **kwargs):
+    """coreNFW enclosed dark matter, parameterized as in Read, Agartz, & Collins 2016.
+    NFW reparameterized to viral mass/concentration
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    Re_s : float
+        half-light radius in arcsec
+    t_sf : float
+        time since the start of star formation, in Gyr
+    dist : float
+        distance in kpc
+    eta_rac : float
+        eta parameter from RAC
+    kappa_rac : float
+        kappa parameter from RAC
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    gamma = 1
+    rho_crit = 277.46 * h**2  # Msun / kpc^3
+    omega = 3 - gamma
+    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit))**(1 / 3)
+    r_s = r200 / c200
+    rho_s = 200 * rho_crit * omega / 3 * c200**gamma / special.hyp2f1(
+        omega, omega, omega + 1, -c200)
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r_c = eta_rac * kpc_per_arcsec * Re_s
+    # G in Msun^-1 kpc^3 Gyr^-2
+    G_alt = 4.498502151575286e-06 
+    t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
+    n_c = np.tanh(kappa_rac * t_sf / t_dyn)
+    return M_coreNFW(r, r_s, rho_s, r_c, n_c, dist)
 
 
 def M_gNFW200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
