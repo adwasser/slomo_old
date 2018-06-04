@@ -281,6 +281,72 @@ def M_coreNFW(r, r_s, rho_s, r_c, n_c, dist, **kwargs):
     return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
 
 
+def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
+    """Enclosed dark matter, coreNFW profile.
+    See Read+2016.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    f_c : float
+        core radius of halo in fraction of r_s
+    n_c : float
+        power-law index of core transition term
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    r_c = f_c * r_s
+    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+
+
+def M_cNFW200(r, M200, c200, f_c, n_c, dist, h=0.678, **kwargs):
+    """Enclosed dark matter, coreNFW profile.
+    See Read+2016.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    f_c : float
+        core radius of halo in fraction of r_s
+    n_c : float
+        power-law index of core transition term
+    dist : float
+        distance in kpc
+    h : float
+        Hubble parameter in 100 km/s/Mpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    rho_crit = 277.46 * h**2  # Msun / kpc^3
+    gamma = 1
+    omega = 3 - gamma
+    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit))**(1 / 3)
+    r_s = r200 / c200
+    rho_s = 200 * rho_crit * omega / 3 * c200**gamma / special.hyp2f1(
+        omega, omega, omega + 1, -c200)
+    r_c = f_c * r_s
+    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+
+
+
 def M_coreNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **kwargs):
     """coreNFW enclosed dark matter, parameterized as in Read, Agartz, & Collins 2016.
 
