@@ -17,16 +17,22 @@ from .utils import radians_per_arcsec, G
 
 __all__ = [
     "L_sersic",
+    "M_sersic",
+    "M_NFW",
+    "M_NFW200",
+    "M_NFW200_dm",
     "M_gNFW",
     "M_gNFW200",
-    "M_coreNFW",
-    "M_NFW_dm",
+    "M_gNFW200_dm",
+    "M_cNFW",
+    "M_cNFW200",
+    "M_cNFW_RAC",
+    "M_cNFW200_RAC",
     "M_log",
     "M_einasto",
     "M_burkert",
     "M_burkert_mu",
     "M_power",
-    "M_sersic",
     "M_point"
 ]
 
