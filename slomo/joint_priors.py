@@ -74,11 +74,11 @@ def smhm(model, values, cosmo=cosmo, mdef='200c', z=0, sigma_h=0.15):
         M200 = kwargs['M200']
         c200 = kwargs['c200']
         # colossus assumes halo masses are in Msun / h
-        Mvir, rvir, cvir = mass_defs.changeMassDefinition(M200 / h, c200, z,
+        Mvir, rvir, cvir = mass_defs.changeMassDefinition(M200 * h, c200, z,
                                                           mdef_in=mdef,
                                                           mdef_out='vir')
         # convert back to Msun (no h scaling)
-        Mvir = Mvir * h
+        Mvir = Mvir / h
     else:
         rho_crit = cosmo.rho_c(z) * h**2 # Msun / kpc3
         delta_c = mass_so.deltaVir(z)
@@ -167,11 +167,7 @@ def hmc(model, values, cosmo=cosmo, mdef='200c', relation='diemer15', z=0,
             c200 = r200 / r_s
         except KeyError:
             raise ValueError('Need to have a defined halo concentration!')
-    a_dm = 0.905
-    b_dm = -0.101
-    sigma_dm = 0.11
-    log_c200_dm = a_dm + b_dm * np.log10(M200 / (1e12 * h**-1))
     # colossus uses halo mass in units of Msun / h
-    c200_model = concentration(M200 / h, mdef=mdef, z=z, model=relation)
+    c200_model = concentration(M200 * h, mdef=mdef, z=z, model=relation)
     return pdf.lngauss(x=log_c200, mu=np.log10(c200_model), sigma=sigma)
     
