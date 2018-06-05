@@ -4,6 +4,13 @@ import numpy as np
 from scipy import special
 from scipy import optimize
 
+from colossus.cosmology import cosmology
+from colossus.halo import mass_defs, mass_so
+from colossus.halo.profile_nfw import NFWProfile
+from colossus.halo.profile_einasto import EinastoProfile
+from colossus.halo.concentration import concentration
+cosmo = cosmology.setCosmology('planck15')
+
 from .surface_density import b_cb
 from .volume_density import p_ln
 from .utils import radians_per_arcsec, G
@@ -22,6 +29,42 @@ __all__ = [
     "M_sersic",
     "M_point"
 ]
+
+def _vir_to_fund(Mvir, cvir, z=0, mdef='200c'):
+    """Computes the fundamental NFW parameters (rho_s, r_s)
+    from the virial parameters (Mvir, cvir)
+    
+    Note that colossus uses units with:
+    rhos in Msun / kpc3 * h2
+    rs in kpc / h
+    M in Msun / h
+
+    Thus we need to convert back and forth from these h-scaled units
+    to recover the physical units.
+
+    Parameters
+    ----------
+    M200 : float or array_like
+        virial mass in Msun
+    c200 : float or array_like
+        halo concentration
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
+    Returns
+    -------
+    rho_s : float or array_like
+        scale density in Msun / kpc3
+    r_s : float or array_like
+        scale radius in kpc
+    """
+    rhos, rs = NFWProfile.fundamentalParameters(M=M200 * h, c=c200, z=z, mdef=mdef)
+    rho_s = rhos * h**2
+    r_s = rs / h
+    return rho_s, r_s
 
 
 def _rvir(mass_function,
@@ -192,6 +235,201 @@ def L_sersic_s(r, I0_s, Re_s, n_s, dist, **kwargs):
     return L_sersic(r, I0_s, Re_s, n_s, dist)
 
 
+def M_NFW(r, r_s, rho_s, dist, **kwargs):
+    """NFW profile parameterized with the scale radius and scale density.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    # distance conversion
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    # colossus units:
+    # rhos in Msun / kpc3 * h2
+    # rs in kpc / h
+    # M in Msun / h
+    h = cosmo.h
+    return NFWProfile.M(rho_s / h**2, r_s * h, r / r_s) / h
+
+
+def M_NFW200(r, M200, c200, dist, z=0, mdef='200c', **kwargs):
+    """NFW profile parameterized with the virial mass and concentration.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    dist : float
+        distance in kpc
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
+    return M_NFW(r, r_s, rho_s, dist)
+
+
+def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
+    """coreNFW profile parameterized with scale radius and density,
+    see Read+2016
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    f_c : float
+        core radius in fraction of r_s
+    n_c : float
+        power-law index of core transition term
+    dist : float
+        distance in kpc
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    r_c = f_c * r_s
+    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+
+
+def M_cNFW200(r, M200, c200, f_c, n_c, dist, z=0, mdef='200c', **kwargs):
+    """coreNFW profile parameterized with M200, c200
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    f_c : float
+        core radius of halo in fraction of r_s
+    n_c : float
+        power-law index of core transition term
+    dist : float
+        distance in kpc
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
+    r_c = f_c * r_s
+    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+
+
+def M_cNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **kwargs):
+    """coreNFW profile, parameterized as in Read, Agartz, & Collins 2016.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    r_s : float
+        scale radius in kpc
+    rho_s : float
+        scale density in Msun / kpc^3
+    Re_s : float
+        half-light radius in arcsec
+    t_sf : float
+        time since the start of star formation, in Gyr
+    dist : float
+        distance in kpc
+    eta_rac : float
+        eta parameter from RAC
+    kappa_rac : float
+        kappa parameter from RAC
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r_c = eta_rac * kpc_per_arcsec * Re_s
+    # G in Msun^-1 kpc^3 Gyr^-2
+    G_alt = 4.498502151575286e-06 
+    t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
+    n_c = np.tanh(kappa_rac * t_sf / t_dyn)
+    f_c = r_c / r_s
+    return M_cNFW(r, r_s, rho_s, f_c, n_c, dist)
+
+
+def M_cNFW200_RAC(r, M200, c200, Re_s, t_sf, dist,
+                  eta_rac=1.75, kappa_rac=0.04, z=0, mdef='200c', **kwargs):
+    """coreNFW profile, parameterized as in Read, Agartz, & Collins 2016.
+    NFW reparameterized to viral mass/concentration
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    Re_s : float
+        half-light radius in arcsec
+    t_sf : float
+        time since the start of star formation, in Gyr
+    dist : float
+        distance in kpc
+    eta_rac : float
+        eta parameter from RAC
+    kappa_rac : float
+        kappa parameter from RAC
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
+    return M_cNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist,
+                      eta_rac=eta_rac, kappa_rac=kappa_rac)
+
+
 def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     """Enclosed dark matter, parameterized as a generalized NFW profile.
 
@@ -232,204 +470,7 @@ def M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs):
     return factor1 * factor2 * factor3
 
 
-def M_NFW(r, r_s, rho_s, dist, **kwargs):
-    """Enclosed dark matter, parameterized as a NFW profile.
-
-    Parameters
-    ----------
-    r : float or array_like
-        deprojected radii in arcsec
-    r_s : float
-        scale radius in kpc
-    rho_s : float
-        scale density in Msun / kpc^3
-    dist : float
-        distance in kpc
-
-    Returns
-    -------
-    float or array_like
-        Enclosed mass in Msun
-    """
-    return M_gNFW(r, r_s, rho_s, 1.0, dist, **kwargs)
-
-
-def M_coreNFW(r, r_s, rho_s, r_c, n_c, dist, **kwargs):
-    """Enclosed dark matter, coreNFW profile.
-    See Read+2016
-
-    Parameters
-    ----------
-    r : float or array_like
-        deprojected radii in arcsec
-    r_s : float
-        scale radius in kpc
-    rho_s : float
-        scale density in Msun / kpc^3
-    r_c : float
-        core radius of halo in kpc
-    n_c : float
-        power-law index of core transition term
-    dist : float
-        distance in kpc
-
-    Returns
-    -------
-    float or array_like
-        Enclosed mass in Msun
-    """
-    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
-
-
-def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
-    """Enclosed dark matter, coreNFW profile.
-    See Read+2016.
-
-    Parameters
-    ----------
-    r : float or array_like
-        deprojected radii in arcsec
-    r_s : float
-        scale radius in kpc
-    rho_s : float
-        scale density in Msun / kpc^3
-    f_c : float
-        core radius of halo in fraction of r_s
-    n_c : float
-        power-law index of core transition term
-    dist : float
-        distance in kpc
-
-    Returns
-    -------
-    float or array_like
-        Enclosed mass in Msun
-    """
-    r_c = f_c * r_s
-    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
-
-
-def M_cNFW200(r, M200, c200, f_c, n_c, dist, h=0.678, **kwargs):
-    """Enclosed dark matter, coreNFW profile.
-    See Read+2016.
-
-    Parameters
-    ----------
-    r : float or array_like
-        deprojected radii in arcsec
-    M200 : float
-        virial mass in Msun
-    c200 : float
-        halo concentration
-    f_c : float
-        core radius of halo in fraction of r_s
-    n_c : float
-        power-law index of core transition term
-    dist : float
-        distance in kpc
-    h : float
-        Hubble parameter in 100 km/s/Mpc
-
-    Returns
-    -------
-    float or array_like
-        Enclosed mass in Msun
-    """
-    rho_crit = 277.46 * h**2  # Msun / kpc^3
-    gamma = 1
-    omega = 3 - gamma
-    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit))**(1 / 3)
-    r_s = r200 / c200
-    rho_s = 200 * rho_crit * omega / 3 * c200**gamma / special.hyp2f1(
-        omega, omega, omega + 1, -c200)
-    r_c = f_c * r_s
-    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
-
-
-
-def M_coreNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **kwargs):
-    """coreNFW enclosed dark matter, parameterized as in Read, Agartz, & Collins 2016.
-
-    Parameters
-    ----------
-    r : float or array_like
-        deprojected radii in arcsec
-    r_s : float
-        scale radius in kpc
-    rho_s : float
-        scale density in Msun / kpc^3
-    Re_s : float
-        half-light radius in arcsec
-    t_sf : float
-        time since the start of star formation, in Gyr
-    dist : float
-        distance in kpc
-    eta_rac : float
-        eta parameter from RAC
-    kappa_rac : float
-        kappa parameter from RAC
-    h : float
-        Hubble parameter in 100 km/s/Mpc
-
-    Returns
-    -------
-    float or array_like
-        Enclosed mass in Msun
-    """
-    kpc_per_arcsec = dist * radians_per_arcsec
-    r_c = eta_rac * kpc_per_arcsec * Re_s
-    # G in Msun^-1 kpc^3 Gyr^-2
-    G_alt = 4.498502151575286e-06 
-    t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
-    n_c = np.tanh(kappa_rac * t_sf / t_dyn)
-    return M_coreNFW(r, r_s, rho_s, r_c, n_c, dist)
-
-
-def M_coreNFW200_RAC(r, M200, c200, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, h=0.678, **kwargs):
-    """coreNFW enclosed dark matter, parameterized as in Read, Agartz, & Collins 2016.
-    NFW reparameterized to viral mass/concentration
-
-    Parameters
-    ----------
-    r : float or array_like
-        deprojected radii in arcsec
-    M200 : float
-        virial mass in Msun
-    c200 : float
-        halo concentration
-    Re_s : float
-        half-light radius in arcsec
-    t_sf : float
-        time since the start of star formation, in Gyr
-    dist : float
-        distance in kpc
-    eta_rac : float
-        eta parameter from RAC
-    kappa_rac : float
-        kappa parameter from RAC
-
-    Returns
-    -------
-    float or array_like
-        Enclosed mass in Msun
-    """
-    gamma = 1
-    rho_crit = 277.46 * h**2  # Msun / kpc^3
-    omega = 3 - gamma
-    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit))**(1 / 3)
-    r_s = r200 / c200
-    rho_s = 200 * rho_crit * omega / 3 * c200**gamma / special.hyp2f1(
-        omega, omega, omega + 1, -c200)
-    kpc_per_arcsec = dist * radians_per_arcsec
-    r_c = eta_rac * kpc_per_arcsec * Re_s
-    # G in Msun^-1 kpc^3 Gyr^-2
-    G_alt = 4.498502151575286e-06 
-    t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
-    n_c = np.tanh(kappa_rac * t_sf / t_dyn)
-    return M_coreNFW(r, r_s, rho_s, r_c, n_c, dist)
-
-
-def M_gNFW200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
+def M_gNFW200(r, M200, c200, gamma, dist, z=0, mdef='200c', **kwargs):
     """gNFW halo parameterized with mass and concentration.
 
     Parameters
@@ -445,24 +486,22 @@ def M_gNFW200(r, M200, c200, gamma, dist, h=0.678, **kwargs):
         gamma is 1 for a classic NFW cusp and 0 for a core
     dist : float
         distance in kpc
-    h : float, optional
-        Hubble parameter in units of 100 km/s/Mpc.
-        Defaults to the Planck 2015 value.
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
     Returns
     -------
     float or array_like
         Enclosed mass in Msun
     """
-    rho_crit = 277.46 * h**2  # Msun / kpc^3
-    omega = 3 - gamma
-    r200 = (3 * M200 / (4 * np.pi * 200 * rho_crit))**(1 / 3)
-    r_s = r200 / c200
-    rho_s = 200 * rho_crit * omega / 3 * c200**gamma / special.hyp2f1(
-        omega, omega, omega + 1, -c200)
+    rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
     return M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs)
 
 
-def M_NFW_dm(r, M200, dist, h=0.678, **kwargs):
+def M_NFW200_dm(r, M200, dist, z=0, mdef='200c', **kwargs):
     """Mass-concentration relation from Dutton & Maccio 2014.
 
     Parameters
@@ -473,9 +512,11 @@ def M_NFW_dm(r, M200, dist, h=0.678, **kwargs):
         virial mass in Msun
     dist : float
         distance in kpc
-    h : float, optional
-        Hubble parameter in units of 100 km/s/Mpc.
-        Defaults to the Planck 2015 value.
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
     
     Returns
     -------
@@ -483,10 +524,10 @@ def M_NFW_dm(r, M200, dist, h=0.678, **kwargs):
         Enclosed mass in Msun
     """
     c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
-    return M_gNFW200(r, M200, c200, 1.0, dist, h=h, **kwargs)
+    return M_NFW200(r, M200, c200, dist, z=z, mdef=mdef, **kwargs)
 
 
-def M_gNFW_dm(r, M200, gamma, dist, h=0.678, **kwargs):
+def M_gNFW200_dm(r, M200, gamma, dist, z=0, mdef='200c', **kwargs):
     """gNFW halo parameterized with mass, with concentration from 
     Dutton & Maccio 2014.
 
@@ -501,16 +542,19 @@ def M_gNFW_dm(r, M200, gamma, dist, h=0.678, **kwargs):
         gamma is 1 for a classic NFW cusp and 0 for a core
     dist : float
         distance in kpc
-    h : float, optional
-        Hubble parameter in units of 100 km/s/Mpc.
-        Defaults to the Planck 2015 value.
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
     Returns
     -------
     float or array_like
         Enclosed mass in Msun
     """
     c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
-    return M_gNFW200(r, M200, c200, gamma, dist, h=h, **kwargs)
+    return M_gNFW200(r, M200, c200, gamma, dist, z=z, mdef=mdef, **kwargs)
 
 
 def M_log(r, r_c, rho_c, dist, **kwargs):
