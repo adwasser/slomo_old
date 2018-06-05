@@ -67,6 +67,7 @@ def _vir_to_fund(Mvir, cvir, z=0, mdef='200c'):
     r_s : float or array_like
         scale radius in kpc
     """
+    h = cosmo.h
     rhos, rs = NFWProfile.fundamentalParameters(M=Mvir * h, c=cvir, z=z, mdef=mdef)
     rho_s = rhos * h**2
     r_s = rs / h
