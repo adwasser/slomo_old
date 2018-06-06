@@ -324,8 +324,9 @@ def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
     float or array_like
         Enclosed mass in Msun
     """
+    kpc_per_arcsec = dist * radians_per_arcsec
     r_c = f_c * r_s
-    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+    return np.tanh(r * kpc_per_arcsec/ r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
 
 
 def M_cNFW200(r, M200, c200, f_c, n_c, dist, z=0, mdef='200c', **kwargs):
@@ -357,8 +358,7 @@ def M_cNFW200(r, M200, c200, f_c, n_c, dist, z=0, mdef='200c', **kwargs):
         Enclosed mass in Msun
     """
     rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
-    r_c = f_c * r_s
-    return np.tanh(r / r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
+    return M_cNFW(r, r_s, rho_s, f_c, n_c, dist)
 
 
 def M_cNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **kwargs):
