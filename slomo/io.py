@@ -251,6 +251,25 @@ def read_dataset(hdf5_file, path):
         return f[path].value
 
 
+def read_samples(hdf5_file, burn_fraction=0.5):
+    """Return samples from the chain.
+
+    Parameters
+    ----------
+    hdf5_file : str
+        hdf5 filename
+    burn_fraction : float
+        fraction of samples in the beginning of the chain to reject
+
+    Returns
+    -------
+    samples : array
+        (nsamples, ndim) array
+    """
+    chain = read_dataset(hdf5_file, 'chain')
+    return chain[:, int(burn_fraction * chain.shape[1]):, :].reshape((-1, chain.shape[2]))
+
+    
 def write_group(hdf5_file, group, path=""):
     """Write the group dictionary to the path on the hdf5 file.
 
