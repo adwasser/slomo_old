@@ -505,6 +505,11 @@ def M_gNFW200(r, M200, c200, gamma, dist, z=0, mdef='200c', **kwargs):
         Enclosed mass in Msun
     """
     rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
+    r_vir = r_s * c200
+    # re-compute rho_s to match virial mass definition
+    kpc_per_arcsec = dist * radians_per_arcsec
+    norm = M_gNFW(r_vir / kpc_per_arcsec, r_s=r_s, rho_s=1, gamma=gamma, dist=dist)
+    rho_s = M200 / norm
     return M_gNFW(r, r_s, rho_s, gamma, dist, **kwargs)
 
 
