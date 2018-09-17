@@ -72,7 +72,7 @@ corner_kwargs = {
 }
 
 
-def walker_plot(outfile, skip_step=100):
+def walker_plot(outfile, skip_step=100, labels=None):
     """Does the walker choose the path or does the path choose the walker?
     
     Parameters
@@ -93,12 +93,14 @@ def walker_plot(outfile, skip_step=100):
 
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
-    labels = []
-    for i, name in enumerate(model.params.names):
-        if name in label_map:
-            labels.append(label_map[name])
-        else:
-            labels.append(name)
+
+    if labels is None:
+        labels = []
+        for i, name in enumerate(model.params.names):
+            if name in label_map:
+                labels.append(label_map[name])
+            else:
+                labels.append(name)
 
     # take every n-th iteration
     n = skip_step
@@ -241,16 +243,17 @@ def corner_plot(outfile, burn_fraction=0.5, **kwargs):
     model = io.read_model(outfile)
     nwalkers, niterations, ndim = chain.shape
     assert ndim == len(model.params)
-    labels = []
-    for i, name in enumerate(model.params.names):
-        if name in label_map:
-            labels.append(label_map[name])
-        else:
-            labels.append(name)
+    if "labels" not in kwargs:
+        labels = []
+        for i, name in enumerate(model.params.names):
+            if name in label_map:
+                labels.append(label_map[name])
+            else:
+                labels.append(name)
+        kwargs["labels"] = labels
     keep = round(niterations * burn_fraction)
     samples = chain[:, keep:, :].reshape((-1, ndim))
     kwargs.update(corner_kwargs)
-    kwargs.update(labels=labels)
     fig = corner(samples, **kwargs)
     return fig
 
