@@ -7,6 +7,7 @@ import numpy as np
 from . import (pdf, jeans)
 from .parameters import Parameter
 
+
 class DynamicalModel:
     """Complete description of the dynamical model, including measurement
     model, data, and priors.
@@ -122,14 +123,51 @@ class MassModel(OrderedDict):
         Sequence of (key, function) tuples where function refers to a mapping of
         r (in arcsec), \*\*kwargs -> M (in Msun)
     """
+    def __init__(self, *args, rgrid=None, **kwargs):
+        self.rgrid = rgrid
+        self.Mgrid = None
+        self.interp_kwargs = None
+        super().__init__(*args, **kwargs)
+        
 
-    def __call__(self, radii, **kwargs):
+    def _build_interp_table(self, rgrid=None, **kwargs):
+        """Cache the total mass profile across the radius range.
+
+        Parameters
+        ----------
+        rmin : float
+            minimum radius (arcsec)
+        rmax : float
+            maximum radius (arcsec)
+        n : int, optional
+            number of steps in interpolation table
+        kwargs : dict
+            keyword arguments for mass models
+        """
+        if rgrid is not None:
+            self.rgrid = rgrid
+        elif self.rgrid is None:
+            raise ValueError("Must define the interpolation grid by passing rgrid.")
+        self.Mgrid = sum([M(self.rgrid, **kwargs) for M in self.values()])
+        self.interp_kwargs = kwargs
+
+        
+    def _kwargs_match(self, **kwargs):
+        return all([self.interp_kwargs[key] == value
+                    for key, value in kwargs.items()])
+
+    
+    def __call__(self, radii, interpolate=True, rgrid=None, **kwargs):
         """Calculate the enclosed mass of all components.
 
         Parameters
         ----------
         radii : float or array_like
             radii (in arcsec) at which to compute the mass
+        interpolate : bool, optional
+            if true, use an interpolation table
+        rgrid : array_like, optional
+            override any built-in interpolation grid
         kwargs : dict
             mapping of names (str) -> values (float)
 
@@ -138,6 +176,10 @@ class MassModel(OrderedDict):
         float or array_like
             Enclosed mass in Msun
         """
+        if interpolate:
+            if (not self._kwargs_match(**kwargs)) or (self.Mgrid is None):
+                self._build_interp_table(rgrid=rgrid, **kwargs)
+            return np.interp(radii, self.rgrid, self.Mgrid)
         return sum([M(radii, **kwargs) for M in self.values()])
 
 
