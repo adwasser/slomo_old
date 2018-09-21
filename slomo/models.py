@@ -93,7 +93,9 @@ class DynamicalModel:
         """
 
         kwargs = self.construct_kwargs(param_values)
-
+        # build mass interpolation table
+        self.mass_model.build_interp_table(**kwargs)
+        
         # log of the prior probability
         lnprior = self.params.lnprior(param_values)
         if not np.isfinite(lnprior):
@@ -130,7 +132,7 @@ class MassModel(OrderedDict):
         super().__init__(*args, **kwargs)
         
 
-    def _build_interp_table(self, rgrid=None, **kwargs):
+    def build_interp_table(self, rgrid=None, **kwargs):
         """Cache the total mass profile across the radius range.
 
         Parameters
@@ -178,7 +180,7 @@ class MassModel(OrderedDict):
         """
         if interpolate:
             if (not self._kwargs_match(**kwargs)) or (self.Mgrid is None):
-                self._build_interp_table(rgrid=rgrid, **kwargs)
+                self.build_interp_table(rgrid=rgrid, **kwargs)
             return np.interp(radii, self.rgrid, self.Mgrid)
         return sum([M(radii, **kwargs) for M in self.values()])
 

@@ -122,6 +122,9 @@ def read_yaml(filename):
         tracer.name: tracer
         for tracer in config['tracers'].values()
     }
+    # keep track of minimum, maximum radii for mass interpolation table
+    Rmin = np.inf
+    Rmax = -np.inf
     for i, measurement in enumerate(measurement_list):
         measurement['likelihood'] = get_function(likelihood,
                                                  measurement['likelihood'])
@@ -148,11 +151,23 @@ def read_yaml(filename):
         if isinstance(measurement['observables'], str):
             data = np.genfromtxt(
                 measurement['observables'], names=True).view(np.recarray)
+            try:
+                R = data['R']
+                if R.min() < Rmin:
+                    Rmin = R.min()
+                if R.max() > Rmax:
+                    Rmax = R.max()
+            except KeyError:
+                pass
             measurement['observables'] = OrderedDict(
                 [(name, data[name]) for name in data.dtype.names])
         config['measurements'][i] = Measurement(**measurement)
     config['measurements'] = OrderedDict([(mm.name, mm)
                                           for mm in config['measurements']])
+    # update mass model with interpolation grid
+    rgrid = np.logspace(np.log10(Rmin), np.log10(Rmax * 100), 50)
+    config['mass_model'].rgrid = rgrid
+    
     try:
         prior_strings = config['joint_priors']
         joint_prior_list = []

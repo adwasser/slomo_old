@@ -14,6 +14,7 @@ cosmo = cosmology.setCosmology('planck15')
 from .surface_density import b_cb
 from .volume_density import p_ln
 from .utils import radians_per_arcsec, G
+from .colossus_profiles import SolitonNFWProfile
 
 __all__ = [
     "L_sersic",

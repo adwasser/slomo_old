@@ -1,8 +1,8 @@
 """
 Subclasses of colossus.halo.HaloDensityProfile
 """
-
-from scipy import stats, special, optimize, integrate
+import numpy as np
+from scipy import optimize
 
 from colossus.cosmology import cosmology
 from colossus.cosmology.cosmology import setCosmology, getCurrent
