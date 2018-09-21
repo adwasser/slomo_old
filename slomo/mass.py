@@ -28,6 +28,7 @@ __all__ = [
     "M_cNFW200",
     "M_cNFW_RAC",
     "M_cNFW200_RAC",
+    "M_solNFW200",
     "M_log",
     "M_einasto",
     "M_burkert",
@@ -567,6 +568,48 @@ def M_gNFW200_dm(r, M200, gamma, dist, z=0, mdef='200c', **kwargs):
     """
     c200 = 10**0.905 * (M200 * h / 1e12)**(-0.101)
     return M_gNFW200(r, M200, c200, gamma, dist, z=z, mdef=mdef, **kwargs)
+
+
+def M_solNFW200(r, M200, c200, epsilon, ma, dist, z=0, mdef='200c', **kwargs):
+    """Cumulative mass profile for a solition-NFW profile.
+
+    Parameters
+    ----------
+    r : float or array_like
+        deprojected radii in arcsec
+    M200 : float
+        virial mass in Msun
+    c200 : float
+        halo concentration
+    epsilon : float
+        matching parameter, equal to the ratio of the solition scale density
+        to the density at the transition radius
+    ma : float
+        axion mass in 1e-22 eV
+    dist : float
+        distance in kpc
+    z : float
+        redshift for virial mass computation, defaults to 0
+    mdef : string
+        colossus virial mass definition string, defaults to '200c'
+        i.e., when average density is 200 times the critical density
+
+    Returns
+    -------
+    float or array_like
+        Enclosed mass in Msun
+    """
+    # colossus units:
+    # rho in Msun / kpc3 * h2
+    # r in kpc / h
+    # M in Msun / h
+    h = cosmo.h
+    profile = SolitonNFWProfile(M=M200 * h, c=c200, epsilon=epsilon, ma=ma,
+                                z=z, mdef=mdef)
+    # distance conversion
+    kpc_per_arcsec = dist * radians_per_arcsec
+    r = r * kpc_per_arcsec
+    return profile.enclosedMass(r * h) / h
 
 
 def M_log(r, r_c, rho_c, dist, **kwargs):
