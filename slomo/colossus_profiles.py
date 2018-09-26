@@ -34,8 +34,8 @@ class SolitonNFWProfile(HaloDensityProfile):
         The NFW scale density in physical :math:`M_{\odot} h^2 / {\rm kpc}^3`.
     rs: float
         The NFW scale radius in physical kpc/h.
-    epsilon: float
-        The matching parameter, equal to the ratio :math:`\rho_{\rm sol} / \rho(r_\epsilon)` 
+    rhosol: float
+        The soliton scale density in physical :math:`M_{\odot} h^2 / {\rm kpc}^3`.
     rsol: float
         The soliton scale radius in physical kpc/h.    
     M: float
@@ -48,92 +48,99 @@ class SolitonNFWProfile(HaloDensityProfile):
         Redshift
     mdef: str
         The mass definition in which ``M`` and ``c`` are given. See :doc:`halo_mass` for details.
-    ma: float
-        mass of ultra-light axion
+    m22: float
+        mass of ultra-light axion in 1e-22 eV
+    epsilon: float
+        The matching parameter, equal to the ratio :math:`\rho_{\rm sol} / \rho(r_\epsilon)` 
+    solition_scaling: bool, optional
+        If true, use the core mass-halo mass scaling from Schive+2014/Robles+2018
     """
     
-    def __init__(self, rhos=None, rs=None, epsilon=None, rsol=None, 
-                 M=None, c=None, z=None, mdef=None, ma=None, **kwargs):
-        self.par_names = ['rhos', 'rs', 'epsilon', 'rsol']
-        self.opt_names = ['repsilon', 'rhosol']
+    def __init__(self, rhos=None, rs=None, rhosol=None, rsol=None, 
+                 M=None, c=None, z=None, mdef=None, m22=None, epsilon=None,
+                 soliton_scaling=True, **kwargs):
+        self.par_names = ['rhos', 'rs', 'rhosol', 'rsol']
+        self.opt_names = ['repsilon']
         HaloDensityProfile.__init__(self, **kwargs)
         
         if rhos is not None and rs is not None:
             self.par['rhos'] = rhos
             self.par['rs'] = rs
         elif M is not None and c is not None and mdef is not None and z is not None:
-            self.par['rhos'], self.par['rs'] = NFWProfile.fundamentalParameters(M, c, z, mdef)      
+            rhos, rs = NFWProfile.fundamentalParameters(M, c, z, mdef)
+            self.par['rhos'] = rhos
+            self.par['rs'] = rs
         else:
             msg = ('An NFW profile must be defined either using rhos and rs, or M, '
                    'c, mdef, and z.')
             raise ValueError(msg)
 
-        if epsilon is not None and rsol is not None:
-            self.par['epsilon'] = epsilon
+        if rhosol is not None and rsol is not None:
+            self.par['rhosol'] = rhosol
             self.par['rsol'] = rsol
-            rhosol, repsilon = self._get_opts(epsilon, rsol)
-            self.opt['rhosol'] = rhosol
-            self.opt['repsilon'] = repsilon
-        elif epsilon is not None and ma is not None and z is not None:
-            self.par['epsilon'] = epsilon
-            self._set_pars_from_ma(ma, z=z)
+            self.opt['repsilon'] = self._matching_radius()
+        elif m22 is not None:
+            rhosol, rsol = SolitonNFWProfile.fundamentalParameters(rhos, rs, z, m22,
+                                                                   epsilon=epsilon,
+                                                                   soliton_scaling=soliton_scaling)
+            self.par['rhosol'] = rhosol
+            self.par['rsol'] = rsol
+            self.opt['repsilon'] = self._matching_radius()
         else:
-            msg = ('A soliton profile must be defined using either epsilon and'
-                   ' rsol or epsilon, ma, and z.')
+            msg = ('A soliton profile must be defined using either rhosol and'
+                   ' rsol or m22, and z.')
             raise ValueError(msg)
         
-        
-    def _get_opts(self, epsilon, rsol):
-        """Calculate the soliton scale density from the matching paramter and
-        scale radius.
-        
+
+    @classmethod
+    def fundamentalParameters(cls, rhos, rs, z, m22, epsilon=None,
+                              soliton_scaling=True):
+        """Calculate the scale density/radius of the soliton core.
+
         Parameters
         ----------
-        epsilon: float
+        rhos: float
+            The NFW scale density in physical :math:`M_{\odot} h^2 / {\rm kpc}^3`.
+        rs: float
+            The NFW scale radius in physical kpc/h.
+		z: float
+			Redshift
+        m22: float
+            axion mass in 1e-22 eV
+        epsilon: float, optional
             The matching parameter, equal to the ratio :math:`\rho_{\rm sol} / \rho(r_\epsilon)` 
-        rsol: float
-            The soliton scale radius in physical kpc/h.
-        
+            By default (None), ignore this and use the soliton scaling
+        solition_scaling: bool, optional
+            If true, use the core mass-halo mass scaling from Schive+2014/Robles+2018
+
         Returns
         -------
         rhosol: float
-        repsilon: float
+            The soliton scale density in physical :math:`M_{\odot} h^2 / {\rm kpc}^3`.
+        rsol: float
+            The soliton scale radius in physical kpc/h.    
         """
-        rs = self.par['rs']
-        rhos = self.par['rhos']
-        repsilon = rsol * (epsilon**(-0.125) - 1)**0.5
-        rhoepsilon = NFWProfile.rho(rhos, repsilon / rs)
-        return rhoepsilon / epsilon, repsilon
-    
-    
-    def _set_pars_from_ma(self, ma, z):
-        """Sets the correct soliton scale parameters from the axion mass."""
-        rhos = self.par['rhos']
-        rs = self.par['rs']
-        epsilon = self.par['epsilon']
-        f = lambda rsol: (ma - self._ma_from_sol(self._get_opts(epsilon, rsol)[0], 
-                                                 rsol, z))**2
-        rsol = optimize.fminbound(f, 1e-3, 1e3)
-        rhosol, repsilon = self._get_opts(epsilon, rsol)
-        self.par['rsol'] = rsol
-        self.opt['rhosol'] = rhosol
-        self.opt['repsilon'] = repsilon
+        if epsilon is not None:
+            return self._pars_from_epsilon(m22, epsilon)
         
+        nfw_profile = NFWProfile(rhos=rhos, rs=rs)
+        # convert virial mass to non-h-scaled
+        Mvir = nfw_profile.MDelta(z, mdef='vir') / cosmo.h
+        
+        # relations with non-h-scaled units, need to convert later to h-scaled
+        rsol = 3.315 * 1.6 * (Mvir / 1e9)**(-1/3.) * m22**-1
+        alpha = 0.230 # from Marsh & Pop 2015
+        rhoc = cosmo.rho_c(z) * cosmo.h**2
+        rhosol = rhoc * (cosmo.h / 0.7)**-2 * (5e4 / alpha**4) * rsol**-4 * m22**-2
+
+        # give back h-scalings
+        rsol = rsol * cosmo.h
+        rhosol = rhosol / cosmo.h**2
+        return rhosol, rsol
+
     
-    def _ma_from_sol(self, rhosol, rsol, z, alpha=0.23):
-        """Calculate the axion mass from the soliton scale parameters.
-        See Marsh & Pop 2015, equation 8.
-        Axion mass has units of 1e-22 eV"""
-        # convert from h-scaled units to "real" units
-        rsol = rsol / cosmo.h
-        # rhosol is normalized by rho_c
-        rho_c = cosmo.rho_c(z)
-        delta_sol = rhosol / rho_c
-        ma = np.sqrt(delta_sol**-1 * rsol**-4 * (cosmo.h / 0.7)**2 * 5e4 * alpha**-4)
-        return ma
-    
-    
-    def rho_sol(self, rhosol, x):
+    @staticmethod
+    def rho_sol(rhosol, x):
         """Calculate the density profile as a function of r / rsol.
         
         Parameters
@@ -150,7 +157,66 @@ class SolitonNFWProfile(HaloDensityProfile):
             Has the same dimensions as ``x``. 
         """
         return rhosol * (1 + x**2)**(-8)
+
     
+    def _matching_radius(self):
+        rhos = self.par['rhos']
+        rs = self.par['rs']
+        rhosol = self.par['rhosol']
+        rsol = self.par['rsol']
+        f_nfw = lambda r: NFWProfile.rho(rhos, r / rs)
+        f_sol = lambda r: SolitonNFWProfile.rho_sol(rhosol, r / rsol)
+        metric = lambda r: ((f_sol(r) - f_nfw(r)) / f_sol(r))**2
+        repsilon = optimize.fminbound(metric, 1e-3, 1e3, xtol=1e-9)
+        return repsilon
+
+    
+    def _m22_from_sol(self, rhosol, rsol, z, alpha=0.23):
+        """Calculate the axion mass from the soliton scale parameters.
+        See Marsh & Pop 2015, equation 8.
+        Axion mass has units of 1e-22 eV"""
+        # convert from h-scaled units to "real" units
+        rsol = rsol / cosmo.h
+        # rhosol is normalized by rho_c
+        delta_sol = rhosol / cosmo.rho_c(z)
+        m22 = np.sqrt(delta_sol**-1 * rsol**-4 * (cosmo.h / 0.7)**2 * 5e4 * alpha**-4)
+        return m22    
+
+    def _rhosol_from_epsilon(self, epsilon, rsol):
+        """Calculate the soliton scale density from the matching paramter and
+        scale radius.
+        
+        Parameters
+        ----------
+        epsilon: float
+            The matching parameter, equal to the ratio :math:`\rho_{\rm sol} / \rho(r_\epsilon)` 
+        rsol: float
+            The soliton scale radius in physical kpc/h.
+        
+        Returns
+        -------
+        rhosol: float
+        """
+        rs = self.par['rs']
+        rhos = self.par['rhos']
+        repsilon = rsol * (epsilon**(-0.125) - 1)**0.5
+        rhoepsilon = NFWProfile.rho(rhos, repsilon / rs)
+        return rhoepsilon / epsilon
+
+    
+    def _pars_from_epsilon(self, m22, epsilon):
+        """Calculate the fundamental parameters (scale density/radius)
+        from epsilon (the matching parameter) and the axion mass.
+        """
+        rhos = self.par['rhos']
+        rs = self.par['rs']
+        epsilon = self.par['epsilon']
+        f = lambda rsol: (m22 - self._m22_from_sol(self._rhosol_from_epsilon(epsilon, rsol), 
+                                                 rsol, z))**2
+        rsol = optimize.fminbound(f, 1e-3, 1e3)
+        rhosol = self._rhosol_from_epsilon(epsilon, rsol)
+        return rhosol, rsol
+
     
     def densityInner(self, r):
         """
@@ -167,13 +233,13 @@ class SolitonNFWProfile(HaloDensityProfile):
         """
         rhos = self.par['rhos']
         rs = self.par['rs']
-        rhosol = self.opt['rhosol']
+        rhosol = self.par['rhosol']
         rsol = self.par['rsol']
         repsilon = self.opt['repsilon']
         
-        rho_soliton = self.rho_sol(rhosol, r / rsol)
+        rho_soliton = SolitonNFWProfile.rho_sol(rhosol, r / rsol)
         rho_nfw = NFWProfile.rho(rhos, r / rs)
         return np.where(r < repsilon, rho_soliton, rho_nfw)
 
-    def get_ma(self, z):
-        return self._ma_from_sol(self.opt['rhosol'], self.par['rsol'], z)
+    def get_m22(self, z=0):
+        return self._m22_from_sol(self.par['rhosol'], self.par['rsol'], z)
