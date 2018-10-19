@@ -210,7 +210,7 @@ class Tracer:
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
 
-    def __call__(self, radii, kwargs):
+    def __call__(self, radii, kwargs, interp_points=10):
         """Returns the predicted velocity dispersion at the given radii.
 
         Parameters
@@ -229,7 +229,7 @@ class Tracer:
         K = lambda r, R: self.anisotropy(r, R, **kwargs)
         I = lambda R: self.surface_density(R, **kwargs)
         nu = lambda r: self.volume_density(r, **kwargs)
-        return jeans.sigma_jeans(radii, M, K, I, nu)
+        return jeans.sigma_jeans(radii, M, K, I, nu, interp_points=interp_points)
 
 
 class Measurement:

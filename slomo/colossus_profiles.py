@@ -121,7 +121,7 @@ class SolitonNFWProfile(HaloDensityProfile):
             The soliton scale radius in physical kpc/h.    
         """
         if epsilon is not None:
-            return self._pars_from_epsilon(m22, epsilon)
+            return cls._pars_from_epsilon(m22, epsilon, rhos, rs, z=z)
         
         nfw_profile = NFWProfile(rhos=rhos, rs=rs)
         # convert virial mass to non-h-scaled
@@ -170,8 +170,8 @@ class SolitonNFWProfile(HaloDensityProfile):
         repsilon = optimize.fminbound(metric, 1e-3, 1e3, xtol=1e-9)
         return repsilon
 
-    
-    def _m22_from_sol(self, rhosol, rsol, z, alpha=0.23):
+    @staticmethod
+    def _m22_from_sol(rhosol, rsol, z, alpha=0.23):
         """Calculate the axion mass from the soliton scale parameters.
         See Marsh & Pop 2015, equation 8.
         Axion mass has units of 1e-22 eV"""
@@ -182,7 +182,8 @@ class SolitonNFWProfile(HaloDensityProfile):
         m22 = np.sqrt(delta_sol**-1 * rsol**-4 * (cosmo.h / 0.7)**2 * 5e4 * alpha**-4)
         return m22    
 
-    def _rhosol_from_epsilon(self, epsilon, rsol):
+    @staticmethod
+    def _rhosol_from_epsilon(epsilon, rsol, rhos, rs):
         """Calculate the soliton scale density from the matching paramter and
         scale radius.
         
@@ -197,24 +198,19 @@ class SolitonNFWProfile(HaloDensityProfile):
         -------
         rhosol: float
         """
-        rs = self.par['rs']
-        rhos = self.par['rhos']
         repsilon = rsol * (epsilon**(-0.125) - 1)**0.5
         rhoepsilon = NFWProfile.rho(rhos, repsilon / rs)
         return rhoepsilon / epsilon
 
-    
-    def _pars_from_epsilon(self, m22, epsilon):
+    @classmethod
+    def _pars_from_epsilon(cls, m22, epsilon, rhos, rs, z=0):
         """Calculate the fundamental parameters (scale density/radius)
         from epsilon (the matching parameter) and the axion mass.
         """
-        rhos = self.par['rhos']
-        rs = self.par['rs']
-        epsilon = self.par['epsilon']
-        f = lambda rsol: (m22 - self._m22_from_sol(self._rhosol_from_epsilon(epsilon, rsol), 
-                                                 rsol, z))**2
+        f = lambda rsol: (m22 - cls._m22_from_sol(cls._rhosol_from_epsilon(epsilon, rsol, rhos, rs), 
+                                              rsol, z))**2
         rsol = optimize.fminbound(f, 1e-3, 1e3)
-        rhosol = self._rhosol_from_epsilon(epsilon, rsol)
+        rhosol = cls._rhosol_from_epsilon(epsilon, rsol, rhos, rs)
         return rhosol, rsol
 
     
@@ -242,4 +238,4 @@ class SolitonNFWProfile(HaloDensityProfile):
         return np.where(r < repsilon, rho_soliton, rho_nfw)
 
     def get_m22(self, z=0):
-        return self._m22_from_sol(self.par['rhosol'], self.par['rsol'], z)
+        return _m22_from_sol(self.par['rhosol'], self.par['rsol'], z)
