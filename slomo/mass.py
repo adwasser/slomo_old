@@ -606,7 +606,9 @@ def M_solNFW200(r, M200, c200, m22, dist, rsol=None, z=0, mdef='200c',
     # r in kpc / h
     # M in Msun / h
     h = cosmo.h
-    profile = SolitonNFWProfile(M=M200 * h, c=c200, rsol=rsol * h, m22=m22,
+    if rsol is not None:
+        rsol = rsol * h
+    profile = SolitonNFWProfile(M=M200 * h, c=c200, rsol=rsol, m22=m22,
                                 z=z, mdef=mdef)
     # distance conversion
     kpc_per_arcsec = dist * radians_per_arcsec
