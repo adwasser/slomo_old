@@ -79,6 +79,10 @@ class SolitonNFWProfile(HaloDensityProfile):
             self.par['rhosol'] = rhosol
             self.par['rsol'] = rsol
             self.opt['repsilon'] = self._matching_radius()
+        elif rsol is not None and m22 is not None:
+            self.par['rsol'] = rsol
+            self.par['rhosol'] = SolitonNFWProfile._rhosol_from_m22(m22, rsol)
+            self.opt['repsilon'] = self._matching_radius()
         elif m22 is not None:
             rhosol, rsol = SolitonNFWProfile.fundamentalParameters(rhos, rs, z, m22,
                                                                    epsilon=epsilon,
@@ -88,7 +92,7 @@ class SolitonNFWProfile(HaloDensityProfile):
             self.opt['repsilon'] = self._matching_radius()
         else:
             msg = ('A soliton profile must be defined using either rhosol and'
-                   ' rsol or m22, and z.')
+                   ' rsol, rsol and m22, or m22, and z.')
             raise ValueError(msg)
         
 
@@ -212,6 +216,16 @@ class SolitonNFWProfile(HaloDensityProfile):
         rsol = optimize.fminbound(f, 1e-3, 1e3)
         rhosol = cls._rhosol_from_epsilon(epsilon, rsol, rhos, rs)
         return rhosol, rsol
+
+    
+    @classmethod
+    def _rhosol_from_m22(cls, m22, rsol, z=0):
+        """Calculate the scale density from m22 and the scale radius"""
+        alpha = 0.230
+        # convert rsol to physical kpc
+        rsol = rsol / cosmo.h
+        delta_sol = (5.0e4 / alpha**4) * (cosmo.h / 0.7)**-2 * m22**-2 * rsol**-4
+        return delta_sol * cosmo.rho_c(z=z)
 
     
     def densityInner(self, r):

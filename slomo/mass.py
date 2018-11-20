@@ -571,7 +571,7 @@ def M_gNFW200_dm(r, M200, gamma, dist, z=0, mdef='200c', **kwargs):
     return M_gNFW200(r, M200, c200, gamma, dist, z=z, mdef=mdef, **kwargs)
 
 
-def M_solNFW200(r, M200, c200, m22, dist, epsilon=None, z=0, mdef='200c',
+def M_solNFW200(r, M200, c200, m22, dist, rsol=None, z=0, mdef='200c',
                 **kwargs):
     """Cumulative mass profile for a solition-NFW profile.
 
@@ -587,11 +587,9 @@ def M_solNFW200(r, M200, c200, m22, dist, epsilon=None, z=0, mdef='200c',
         axion mass in 1e-22 eV
     dist : float
         distance in kpc
-    epsilon : float, optional
-        matching parameter, equal to the ratio of the solition scale density
-        to the density at the transition radius
-        if provided, use this instead of the soliton core radius scaling relation
-        from Schive+2014 (default of None will use the scaling relation)
+    rsol : float, optional
+        soliton core radius in kpc
+        if None, than use the halo mass--core radius scaling relation instead
     z : float
         redshift for virial mass computation, defaults to 0
     mdef : string
@@ -608,7 +606,7 @@ def M_solNFW200(r, M200, c200, m22, dist, epsilon=None, z=0, mdef='200c',
     # r in kpc / h
     # M in Msun / h
     h = cosmo.h
-    profile = SolitonNFWProfile(M=M200 * h, c=c200, epsilon=epsilon, m22=m22,
+    profile = SolitonNFWProfile(M=M200 * h, c=c200, rsol=rsol * h, m22=m22,
                                 z=z, mdef=mdef)
     # distance conversion
     kpc_per_arcsec = dist * radians_per_arcsec
