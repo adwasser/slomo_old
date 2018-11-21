@@ -302,7 +302,7 @@ def M_NFW200(r, M200, c200, dist, z=0, mdef='200c', **kwargs):
     return M_NFW(r, r_s, rho_s, dist)
 
 
-def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
+def M_cNFW(r, r_s, rho_s, r_c, n_c, dist, **kwargs):
     """coreNFW profile parameterized with scale radius and density,
     see Read+2016
 
@@ -314,8 +314,8 @@ def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
         scale radius in kpc
     rho_s : float
         scale density in Msun / kpc^3
-    f_c : float
-        core radius in fraction of r_s
+    r_c : float
+        core radius in kpc
     n_c : float
         power-law index of core transition term
     dist : float
@@ -327,11 +327,10 @@ def M_cNFW(r, r_s, rho_s, f_c, n_c, dist, **kwargs):
         Enclosed mass in Msun
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    r_c = f_c * r_s
     return np.tanh(r * kpc_per_arcsec/ r_c)**n_c * M_NFW(r, r_s, rho_s, dist)
 
 
-def M_cNFW200(r, M200, c200, f_c, n_c, dist, z=0, mdef='200c', **kwargs):
+def M_cNFW200(r, M200, c200, r_c, n_c, dist, z=0, mdef='200c', **kwargs):
     """coreNFW profile parameterized with M200, c200
 
     Parameters
@@ -342,8 +341,8 @@ def M_cNFW200(r, M200, c200, f_c, n_c, dist, z=0, mdef='200c', **kwargs):
         virial mass in Msun
     c200 : float
         halo concentration
-    f_c : float
-        core radius of halo in fraction of r_s
+    r_c : float
+        core radius of halo in kpc
     n_c : float
         power-law index of core transition term
     dist : float
@@ -360,7 +359,7 @@ def M_cNFW200(r, M200, c200, f_c, n_c, dist, z=0, mdef='200c', **kwargs):
         Enclosed mass in Msun
     """
     rho_s, r_s = _vir_to_fund(M200, c200, z=z, mdef=mdef)
-    return M_cNFW(r, r_s, rho_s, f_c, n_c, dist)
+    return M_cNFW(r, r_s, rho_s, r_c, n_c, dist)
 
 
 def M_cNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **kwargs):
@@ -396,8 +395,7 @@ def M_cNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **
     G_alt = 4.498502151575286e-06 
     t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
     n_c = np.tanh(kappa_rac * t_sf / t_dyn)
-    f_c = r_c / r_s
-    return M_cNFW(r, r_s, rho_s, f_c, n_c, dist)
+    return M_cNFW(r, r_s, rho_s, r_c, n_c, dist)
 
 
 def M_cNFW200_RAC(r, M200, c200, Re_s, t_sf, dist,
