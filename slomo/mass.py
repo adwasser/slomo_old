@@ -390,7 +390,8 @@ def M_cNFW_RAC(r, r_s, rho_s, Re_s, t_sf, dist, eta_rac=1.75, kappa_rac=0.04, **
         Enclosed mass in Msun
     """
     kpc_per_arcsec = dist * radians_per_arcsec
-    r_c = eta_rac * kpc_per_arcsec * Re_s
+    # convert effective radius in arcsec to deprojected half-light radius in kpc
+    r_c = eta_rac * kpc_per_arcsec * Re_s * 4/3
     # G in Msun^-1 kpc^3 Gyr^-2
     G_alt = 4.498502151575286e-06 
     t_dyn = 2 * np.pi * np.sqrt(r_s**3 / (G_alt * M_NFW(r_s / kpc_per_arcsec, r_s, rho_s, dist)))
