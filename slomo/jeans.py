@@ -1,11 +1,14 @@
 """Solving the spherical Jeans equation."""
 
+import warnings
+
 import numpy as np
-from scipy.integrate import quad
+from scipy.integrate import quad, IntegrationWarning
 from scipy.interpolate import interp1d
 
 from .utils import G
 
+warnings.filterwarnings("ignore", category=IntegrationWarning)
 
 def sigma_jeans(R,
                 M,
