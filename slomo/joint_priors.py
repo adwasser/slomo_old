@@ -164,7 +164,7 @@ def hmc(model, values, cosmo=cosmo, mdef='200c', relation='diemer15', z=0,
     else:
         try:
             r_s = kwargs['r_s']
-            c200 = r200 / r_s
+            log_c200 = np.log10(r200 / r_s)
         except KeyError:
             raise ValueError('Need to have a defined halo concentration!')
     # colossus uses halo mass in units of Msun / h
