@@ -152,6 +152,34 @@ class SolitonNFWProfile(HaloDensityProfile):
         """
         return rhosol * (1 + x**2)**(-8)
 
+    @staticmethod
+    def M_sol(rhosol, rsol, x):
+        """Calculate the density profile as a function of r / rsol.
+        
+        Parameters
+        ----------
+        rhosol: float
+            The soliton scale density in physical :math:`M_{\odot} h^2 / {\rm kpc}^3`.
+        x: float or array_like
+            radius as a fraction of the soliton scale radius
+        
+        Returns
+        -------
+        mass : array_like
+            Mass in physical :math:`M_{\odot} h^{-1}`.
+            Has the same dimensions as ``x``. 
+        """
+        t = np.arctan2(r, 1.0)
+        term0 = 27720 * t
+        term1 = 17325 * np.sin(2 * t)
+        term2 = -1155 * np.sin(4 * t)
+        term3 = -4235 * np.sin(6 * t)
+        term4 = -2625 * np.sin(8 * t)
+        term5 = -903 * np.sin(10 * t)
+        term6 = -175 * np.sin(12 * t)
+        term7 = -15 * np.sin(14 * t)
+        factor = 4 * np.pi * rhosol * rsol**3 / 1720320
+        return factor * sum([term0, term1, term2, term3, term4, term5, term6, term7])
     
     def _matching_radius(self):
         rhos = self.par['rhos']
@@ -210,5 +238,46 @@ class SolitonNFWProfile(HaloDensityProfile):
         rho_nfw = NFWProfile.rho(rhos, r / rs)
         return np.where(r < repsilon, rho_soliton, rho_nfw)
 
+    def enclosedMassInner(self, r):
+        """
+        Parameters
+        ----------
+        r: array_like
+            Radius in physical kpc/h; can be a number or a numpy array.
+            
+        Returns
+        -------
+        mass: array_like
+            mass in physical :math:`M_{\odot} h^{-1}`.
+            Has the same dimensions as ``r``.
+        """
+        is_array = True
+        try:
+            n = len(r)
+        except TypeError:
+            is_array = False
+                
+        rhos = self.par['rhos']
+        rs = self.par['rs']
+        rhosol = self.par['rhosol']
+        rsol = self.par['rsol']
+        repsilon = self.opt['repsilon']
+
+        dM_epsilon = (SolitonNFWProfile.M_sol(rhosol, rsol, repsilon / rsol) -
+                      NFWProfile.M(rhos, rs, repsilon / rs))
+        
+        if is_array:
+            M = np.empty_like(r)
+            idx_sol = r < repsilon
+            idx_nfw = ~idx_sol
+            M[idx_sol] = SolitonNFWProfile.M_sol(rhosol, rsol, r[idx_sol] / rsol)
+            M[idx_nfw] = NFWProfile.M(rhos, rs, r[idx_nfw] / rs) + dM_epsilon
+        else:
+            if r < repsilon:
+                M = SolitonNFWProfile.M_sol(rhosol, rsol, r[idx_sol] / rsol)
+            else:
+                M = NFWProfile.M(rhos, rs, r / rs) + dM_epsilon
+        return M            
+        
     def get_m22(self, z=0):
         return _m22_from_sol(self.par['rhosol'], self.par['rsol'], z)
