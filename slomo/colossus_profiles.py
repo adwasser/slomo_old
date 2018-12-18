@@ -169,7 +169,7 @@ class SolitonNFWProfile(HaloDensityProfile):
             Mass in physical :math:`M_{\odot} h^{-1}`.
             Has the same dimensions as ``x``. 
         """
-        t = np.arctan2(r, 1.0)
+        t = np.arctan2(x, 1.0)
         term0 = 27720 * t
         term1 = 17325 * np.sin(2 * t)
         term2 = -1155 * np.sin(4 * t)
@@ -247,7 +247,7 @@ class SolitonNFWProfile(HaloDensityProfile):
             
         Returns
         -------
-        mass: array_like
+        M: array_like
             mass in physical :math:`M_{\odot} h^{-1}`.
             Has the same dimensions as ``r``.
         """
@@ -278,6 +278,25 @@ class SolitonNFWProfile(HaloDensityProfile):
             else:
                 M = NFWProfile.M(rhos, rs, r / rs) + dM_epsilon
         return M            
+
+    def enclosedMass(self, r):
+        """
+		The mass enclosed within radius r.
+        
+		Parameters
+		-------------------------------------------------------------------------------------------
+		r: array_like
+			Radius in physical kpc/h; can be a number or a numpy array.
+		accuracy: float
+			The minimum accuracy of the integration.
+			
+		Returns
+		-------------------------------------------------------------------------------------------
+		M: array_like
+			The mass enclosed within radius ``r``, in :math:`M_{\odot}/h`; has the same dimensions 
+			as ``r``.
+        """		
+        return self.enclosedMassInner(r) + self.enclosedMassOuter(r)
         
     def get_m22(self, z=0):
         return _m22_from_sol(self.par['rhosol'], self.par['rsol'], z)
