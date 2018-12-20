@@ -3,7 +3,7 @@
 import warnings
 
 import numpy as np
-from scipy.integrate import quad, IntegrationWarning
+from scipy.integrate import quad, simps, IntegrationWarning
 from scipy.interpolate import interp1d
 
 from .utils import G
@@ -80,3 +80,49 @@ def sigma_jeans(R,
     if return_interp:
         return s, sigma
     return s
+
+def sigma_aperture(R_ap,
+                   M,
+                   K,
+                   I,
+                   nu,
+                   interp_points=10,
+                   cutoff_factor=100,
+                   return_interp=False):
+    """Average velocity dispersion over a circular aperture in the spherically 
+    symmetric Jeans model.  For an array of input radii, the returned profile 
+    is calculated from an interpolated grid of a given size, distributed 
+    logrithmically across the radial range.
+
+    Parameters
+    ----------
+    R_ap : float
+        projected radius of aperture, in arcsec
+    M : function
+        R -> enclosed mass, in Msun
+    K : function
+        The Jeans kernel
+        r, R -> float
+        where r is the deprojected radius and R is the projected radius
+    I : function
+        R -> I, in count / kpc^2
+        The surface density of the tracer.
+    nu : function
+        r -> nu, in count / kpc^3
+        The volume density of the tracer.
+    interp_points : int, optional
+        Number of radial points (distributed logarithmically) over which to
+        interpolate.  If None, than compute each point without interpolation.
+        Defaults to 10.
+    cutoff_factor : float, optional
+        The upper limit of the Jeans integral, in factors of the max of R.
+        Defaults to 100.
+    """
+    logR_ap = np.log10(R_ap)
+    Rgrid = np.logspace(logR_ap - 2, logR_ap)
+    sgrid = sigma_jeans(Rgrid, M, K, I, nu, interp_points=interp_points,
+                        cutoff_factor=cutoff_factor)
+    surface_density = I(Rgrid)
+    norm = simps(Rgrid, Rgrid * surface_density)
+    sigma_ap = simps(Rgrid, Rgrid * surface_density * sgrid) / norm
+    return sigma_ap

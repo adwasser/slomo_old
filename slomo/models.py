@@ -200,12 +200,13 @@ class Tracer:
         r -> nu(r, \*\*kwargs)
     """
     def __init__(self, name, anisotropy, surface_density, volume_density,
-                 mass_model):
+                 mass_model, aperture=False):
         self.name = name
         self.anisotropy = anisotropy
         self.volume_density = volume_density
         self.surface_density = surface_density
         self.mass_model = mass_model
+        self.aperture = aperture
 
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.name)
@@ -229,6 +230,8 @@ class Tracer:
         K = lambda r, R: self.anisotropy(r, R, **kwargs)
         I = lambda R: self.surface_density(R, **kwargs)
         nu = lambda r: self.volume_density(r, **kwargs)
+        if self.aperture:
+            return jeans.sigma_aperture(radii, M, K, I, nu, interp_points=interp_points)
         return jeans.sigma_jeans(radii, M, K, I, nu, interp_points=interp_points)
 
 

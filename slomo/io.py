@@ -108,7 +108,7 @@ def read_yaml(filename):
     tracer_list = config['tracers']
     for i, tracer in enumerate(tracer_list):
         for key in tracer:
-            if key == 'name':
+            if key == 'name' or key == 'aperture':
                 continue
             tracer[key] = get_function(tracer_modules[key], tracer[key])
         tracer['mass_model'] = mass_model
