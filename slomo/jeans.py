@@ -52,7 +52,7 @@ def sigma_jeans(R,
     try:
         size = len(R)
     except TypeError as e:
-        R = [R]
+        R = np.array([R])
         size = 1
         interp_points = None
     integrand = lambda r, R: K(r, R) * nu(r) * M(r) / r
